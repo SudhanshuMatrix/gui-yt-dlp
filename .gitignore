@@ -1,0 +1,23 @@
+# Python Bytecode and Caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# PyInstaller Build Artifacts
+build/
+dist/
+
+# Debian package build outputs
+*.deb
+
+# System/IDE config folders
+.vscode/
+.idea/
+.DS_Store

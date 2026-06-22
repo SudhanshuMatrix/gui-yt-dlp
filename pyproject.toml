@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gui-yt-dlp"
+version = "1.0.0"
+description = "A modern PySide6 GUI frontend for yt-dlp"
+readme = "README.md"
+authors = [
+    { name = "Sudhanshu Singh" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Environment :: X11 Applications :: Qt",
+]
+requires-python = ">=3.12"
+dependencies = [
+    "PySide6>=6.5.0",
+    "yt-dlp>=2024.3.10",
+    "requests>=2.31.0"
+]
+
+[project.gui-scripts]
+gui-yt-dlp = "src.main:main"
