@@ -4,6 +4,22 @@ A premium, modern dark-themed desktop frontend for `yt-dlp` built using Python 3
 
 ---
 
+## 📥 Downloads
+
+Get the pre-compiled standalone application for your platform from the [Releases Page](https://github.com/SudhanshuMatrix/gui-yt-dlp/releases):
+
+### 🐧 Linux (Debian / Ubuntu)
+* **Installer (.deb)**: [Download latest gui-yt-dlp_amd64.deb](https://github.com/SudhanshuMatrix/gui-yt-dlp/releases/latest)
+  * *Includes full system application menu launcher integration and custom branding logo.*
+* **Standalone Portable Binary**: [Download latest gui-yt-dlp-linux](https://github.com/SudhanshuMatrix/gui-yt-dlp/releases/latest)
+  * *Single portable ELF executable file (no installation required).*
+
+### 🪟 Windows (10 / 11)
+* **Standalone Portable Executable (.exe)**: [Download latest gui-yt-dlp-windows.exe](https://github.com/SudhanshuMatrix/gui-yt-dlp/releases/latest)
+  * *Single portable Windows executable (no installation required).*
+
+---
+
 ## 📂 Project Structure
 
 ```
