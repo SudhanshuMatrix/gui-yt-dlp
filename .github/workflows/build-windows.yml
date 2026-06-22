@@ -1,27 +1,32 @@
 name: Build Windows EXE
 
 on:
-workflow_dispatch:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-build:
-runs-on: windows-latest
+  build:
+    runs-on: windows-latest
 
-```
-steps:
-  - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-  - uses: actions/setup-python@v5
-    with:
-      python-version: '3.12'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-  - run: pip install -r requirements.txt
-  - run: pip install pyinstaller
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
 
-  - run: pyinstaller --clean gui-yt-dlp.spec
+      - name: Build executable
+        run: pyinstaller --clean gui-yt-dlp.spec
 
-  - uses: actions/upload-artifact@v4
-    with:
-      name: gui-yt-dlp-windows
-      path: dist/*
-```
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gui-yt-dlp-windows
+          path: dist/
