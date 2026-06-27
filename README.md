@@ -4,27 +4,27 @@ A premium, modern dark-themed desktop frontend for `yt-dlp` built using Python 3
 
 ---
 
-## 📥 Downloads
+## <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/lucide/download.svg?color=%23e6edf3"><img src="https://api.iconify.design/lucide/download.svg?color=%2324292f" width="22" height="22" align="center" alt="download"></picture> Downloads
 
 Get the pre-compiled standalone application for your platform from the [Releases Page](https://github.com/SudhanshuMatrix/gui-yt-dlp/releases):
 
-### 🐧 Linux (Debian / Ubuntu)
+### <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/simple-icons/linux.svg?color=%23e6edf3"><img src="https://api.iconify.design/simple-icons/linux.svg?color=%2324292f" width="18" height="18" align="center" alt="linux"></picture> Linux (Debian / Ubuntu)
 * **Installer (.deb)**: [Download latest gui-yt-dlp_amd64.deb](https://github.com/SudhanshuMatrix/gui-yt-dlp/releases/latest)
   * *Includes full system application menu launcher integration and custom branding logo.*
 * **Standalone Portable Binary**: [Download latest gui-yt-dlp-linux](https://github.com/SudhanshuMatrix/gui-yt-dlp/releases/latest)
   * *Single portable ELF executable file (no installation required).*
 
-### 🪟 Windows (10 / 11)
+### <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/simple-icons/windows.svg?color=%23e6edf3"><img src="https://api.iconify.design/simple-icons/windows.svg?color=%2324292f" width="18" height="18" align="center" alt="windows"></picture> Windows (10 / 11)
 * **Standalone Portable Executable (.exe)**: [Download latest gui-yt-dlp-windows.exe](https://github.com/SudhanshuMatrix/gui-yt-dlp/releases/latest)
   * *Single portable Windows executable (no installation required).*
 
-### 🍎 macOS (Intel / Apple Silicon)
+### <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/simple-icons/apple.svg?color=%23e6edf3"><img src="https://api.iconify.design/simple-icons/apple.svg?color=%2324292f" width="18" height="18" align="center" alt="macos"></picture> macOS (Intel / Apple Silicon)
 * **Standalone Portable Binary**: [Download latest gui-yt-dlp-macos](https://github.com/SudhanshuMatrix/gui-yt-dlp/releases/latest)
   * *Single portable macOS binary (no installation required).*
 
 ---
 
-## 📂 Project Structure
+## <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/lucide/folder-open.svg?color=%23e6edf3"><img src="https://api.iconify.design/lucide/folder-open.svg?color=%2324292f" width="22" height="22" align="center" alt="folder"></picture> Project Structure
 
 ```
 gui-yt-dlp/
@@ -56,7 +56,7 @@ gui-yt-dlp/
 
 ---
 
-## 🚀 Installation & Quick Start
+## <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/lucide/rocket.svg?color=%23e6edf3"><img src="https://api.iconify.design/lucide/rocket.svg?color=%2324292f" width="22" height="22" align="center" alt="rocket"></picture> Installation & Quick Start
 
 ### 1. Prerequisites
 - Python 3.12 or newer.
@@ -98,7 +98,7 @@ python3 -m src.main
 
 ---
 
-## 🛠️ Packaging & Distribution Instructions
+## <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/lucide/package.svg?color=%23e6edf3"><img src="https://api.iconify.design/lucide/package.svg?color=%2324292f" width="22" height="22" align="center" alt="package"></picture> Packaging & Distribution Instructions
 
 ### 1. PyInstaller (Single Binary Executable)
 To package the application as a standalone executable folder or single file:
@@ -158,7 +158,7 @@ To package as an AppImage, you can use `appimage-builder`:
    ```
 3. Run: `appimage-builder --recipe appimage-builder.yml`.
 
-### 3. Flatpak (Sandboxed Linux App)
+### 4. Flatpak (Sandboxed Linux App)
 To package the app as a Flatpak, write a manifest file named `org.flatpak.gui-yt-dlp.json`:
 ```json
 {
@@ -199,30 +199,30 @@ flatpak run org.flatpak.gui-yt-dlp
 
 ---
 
-## 📺 Application Screens
+## <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/lucide/monitor.svg?color=%23e6edf3"><img src="https://api.iconify.design/lucide/monitor.svg?color=%2324292f" width="22" height="22" align="center" alt="monitor"></picture> Application Screens
 
-### 1. Downloader Dashboard
+### <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/lucide/layout-dashboard.svg?color=%23e6edf3"><img src="https://api.iconify.design/lucide/layout-dashboard.svg?color=%2324292f" width="18" height="18" align="center" alt="dashboard"></picture> 1. Downloader Dashboard
 ![Downloader Dashboard](screenshots/Downloader%20Dashboard.png)
 - **URL Parser**: Paste any video or playlist URL. The dashboard automatically fetches video details and shows a high-quality 16:9 thumbnail preview, title, channel name, and duration.
 - **Download Settings**: Customize the download mode (e.g., *Best Quality*, *Video Only*, *Audio Only MP3*, or *Custom Formats*).
 - **Playlist Controls**: When a playlist is detected, you can specify ranges (e.g., start downloading from item 4) or enter complex indices (e.g. `1,3,5-10`).
 - **Post-Processing Options**: Toggle automatic embedding of subtitles, video thumbnails, metadata, and specify target folders.
 
-### 2. Download Queue
+### <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/lucide/list-todo.svg?color=%23e6edf3"><img src="https://api.iconify.design/lucide/list-todo.svg?color=%2324292f" width="18" height="18" align="center" alt="queue"></picture> 2. Download Queue
 ![Download Queue](screenshots/Download%20Queue.png)
 - **Live Progress Grid**: Displays active and queued downloads in a tabular list with live status indicators, thumbnail previews, file size metrics, real-time download speeds, and ETAs.
 - **Worker Controls**: Pause, resume, cancel, or remove tasks on the fly without blocking the UI thread.
 - **Dynamic Format Selector**: If a video lacks the user-requested format, the task transitions to a warning state labeled `Format Unavailable`. Clicking `Select Format` prompts a dialog with alternative streams available for that specific video so you can select and re-queue.
 - **Monospace Console Logs**: An integrated collapsible shell terminal displaying color-coded stdout logs from `yt-dlp` subprocesses for debugging.
 
-### 3. Settings Dashboard
+### <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/lucide/settings.svg?color=%23e6edf3"><img src="https://api.iconify.design/lucide/settings.svg?color=%2324292f" width="18" height="18" align="center" alt="settings"></picture> 3. Settings Dashboard
 ![Settings Dashboard](screenshots/Settings%20Dashboard.png)
 - **Directory Paths**: Specify default download destination directories and configure path shortcuts.
 - **FFmpeg Engine**: Dynamically scans for FFmpeg and FFprobe binary locations on your system, indicating status in green (found) or red (missing).
 - **Concurrency & Themes**: Set concurrent download limits (1-10 files at a time) and select from custom application-wide UI themes (like *Midnight Obsidian*).
 - **Component Updates**: Check and upgrade the `yt-dlp` dependency directly in the background.
 
-### 4. Library Dashboard
+### <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/lucide/library.svg?color=%23e6edf3"><img src="https://api.iconify.design/lucide/library.svg?color=%2324292f" width="18" height="18" align="center" alt="library"></picture> 4. Library Dashboard
 ![Library Dashboard](screenshots/Library%20Dashboard.png)
 - **Persistent Bookmarks**: Save analyzed videos and playlists to download at a later time. Saved items are serialized persistently inside `~/.config/gui-yt-dlp/library.json`.
 - **Quick Save URL**: Paste a video or playlist URL directly to quick-add it to your library. It auto-fetches uploader details, titles, and thumbnails in the background.
