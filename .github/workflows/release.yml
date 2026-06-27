@@ -49,7 +49,7 @@ jobs:
         with:
           name: linux-artifacts
           path: |
-            gui-yt-dlp_1.0.0_amd64.deb
+            *.deb
             dist/gui-yt-dlp-linux
 
   build-windows:
