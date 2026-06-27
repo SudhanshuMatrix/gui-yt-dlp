@@ -11,6 +11,7 @@ from ..yt_dlp_worker import VideoAnalyzer, PlaylistFirstVideoAnalyzer
 from ..download_manager import download_manager
 from ..config import config_manager
 from ..utils.logger import get_logger
+from ..utils.speed_test import SpeedTestWorker
 
 logger = get_logger("downloader_tab")
 
@@ -25,6 +26,7 @@ class DownloaderTab(QWidget):
         self.first_video_analyzer: Optional[PlaylistFirstVideoAnalyzer] = None
         self.active_download_task_id = None
         self.terminating_analyzers = set()
+        self.speed_tester = None
 
         self._init_ui()
         download_manager.task_updated.connect(self._on_task_updated_downloader)
@@ -57,12 +59,18 @@ class DownloaderTab(QWidget):
         self.analyze_btn.setMinimumHeight(40)
         self.analyze_btn.clicked.connect(self._start_analysis)
         input_layout.addWidget(self.analyze_btn)
+
+        self.speed_test_btn = QPushButton("Speed Test")
+        self.speed_test_btn.setMinimumHeight(40)
+        self.speed_test_btn.clicked.connect(self._start_speed_test)
+        input_layout.addWidget(self.speed_test_btn)
         
         url_section_layout.addLayout(input_layout)
         
         # Checkbox for combined links
         self.noplaylist_check = QCheckBox("Ignore playlist context and download only the single video")
         self.noplaylist_check.setVisible(False)
+        self.noplaylist_check.stateChanged.connect(self._on_noplaylist_changed)
         url_section_layout.addWidget(self.noplaylist_check)
         
         layout.addLayout(url_section_layout)
@@ -364,6 +372,11 @@ class DownloaderTab(QWidget):
         btns_layout = QHBoxLayout()
         btns_layout.addStretch()
 
+        self.save_library_btn = QPushButton("Save to Library")
+        self.save_library_btn.setMinimumHeight(36)
+        self.save_library_btn.clicked.connect(self._save_to_library)
+        btns_layout.addWidget(self.save_library_btn)
+
         self.add_queue_btn = QPushButton("Add to Queue")
         self.add_queue_btn.setMinimumHeight(36)
         self.add_queue_btn.clicked.connect(self._add_to_queue)
@@ -429,6 +442,35 @@ class DownloaderTab(QWidget):
                 self._load_first_video_formats()
 
     @Slot()
+    def _start_speed_test(self):
+        self.speed_test_btn.setEnabled(False)
+        self.speed_test_btn.setText("Testing (0%)...")
+        
+        self.speed_tester = SpeedTestWorker()
+        self.speed_tester.progress.connect(self._on_speed_test_progress)
+        self.speed_tester.finished.connect(self._on_speed_test_finished)
+        self.speed_tester.error.connect(self._on_speed_test_error)
+        self.speed_tester.start()
+
+    @Slot(int)
+    def _on_speed_test_progress(self, percent: int):
+        self.speed_test_btn.setText(f"Testing ({percent}%)...")
+
+    @Slot(float, str)
+    def _on_speed_test_finished(self, speed: float, speed_str: str):
+        self.speed_test_btn.setEnabled(True)
+        self.speed_test_btn.setText("Speed Test")
+        QMessageBox.information(self, "Speed Test", f"Download speed test completed!\n\nMeasured Speed: {speed_str}")
+        self.speed_tester = None
+
+    @Slot(str)
+    def _on_speed_test_error(self, error_msg: str):
+        self.speed_test_btn.setEnabled(True)
+        self.speed_test_btn.setText("Speed Test")
+        QMessageBox.warning(self, "Speed Test Failed", f"Could not complete speed test:\n{error_msg}")
+        self.speed_tester = None
+
+    @Slot()
     def _start_analysis(self):
         url = self.url_input.text().strip()
         if not url:
@@ -453,7 +495,10 @@ class DownloaderTab(QWidget):
             self.analyzer.finished.connect(lambda a=self.analyzer: self._handle_analyzer_terminated(a))
             self.analyzer = None
             
-        noplaylist = self.noplaylist_check.isVisible() and self.noplaylist_check.isChecked()
+        has_video = "v=" in url or "watch?" in url
+        has_playlist = "list=" in url
+        is_combined = has_video and has_playlist
+        noplaylist = is_combined and self.noplaylist_check.isChecked()
         self.analyzer = VideoAnalyzer(url, noplaylist=noplaylist)
         self.analyzer.analysis_completed.connect(self._on_analysis_success)
         self.analyzer.analysis_failed.connect(self._on_analysis_failed)
@@ -620,7 +665,11 @@ class DownloaderTab(QWidget):
         mode_idx = self.mode_combo.currentIndex()
         
         # Check if we should ignore playlist
-        if self.noplaylist_check.isVisible() and self.noplaylist_check.isChecked():
+        url_text = self.url_input.text().strip()
+        has_video = "v=" in url_text or "watch?" in url_text
+        has_playlist = "list=" in url_text
+        is_combined = has_video and has_playlist
+        if is_combined and self.noplaylist_check.isChecked():
             opts['noplaylist'] = True
             is_playlist = False
         else:
@@ -732,6 +781,37 @@ class DownloaderTab(QWidget):
         opts['outtmpl'] = {'default': save_dir}
 
         return opts
+
+    @Slot()
+    def _save_to_library(self):
+        if not self.current_analysis:
+            return
+            
+        url = self.current_analysis.get('webpage_url') or self.url_input.text().strip()
+        title = self.current_analysis.get('title', 'Unknown Title')
+        uploader = self.current_analysis.get('uploader', 'Unknown')
+        duration = self._format_duration(self.current_analysis.get('duration', 0)) if self.current_analysis.get('duration') else "Unknown"
+        is_playlist = self._is_playlist()
+        type_str = "Playlist" if is_playlist else "Video"
+        
+        if is_playlist:
+            entries = self._get_playlist_entries()
+            count = len(entries)
+            if count == 0 and self.current_analysis.get('playlist_count'):
+                count = self.current_analysis.get('playlist_count')
+            duration = f"{count} items"
+            
+        thumb_path = self.current_analysis.get('thumbnail_local_path')
+        
+        from ..utils.library_manager import library_manager
+        success = library_manager.add_item(url, title, uploader, duration, type_str, thumb_path)
+        
+        if success:
+            QMessageBox.information(self, "Saved to Library", f"Successfully saved '{title}' to your library!")
+            if hasattr(self.main_window, 'library_tab'):
+                self.main_window.library_tab.refresh_library()
+        else:
+            QMessageBox.warning(self, "Already Saved", "This video/playlist is already saved in your library.")
 
     @Slot()
     def _add_to_queue(self):
@@ -849,6 +929,7 @@ class DownloaderTab(QWidget):
         self.progress_frame.setVisible(False)
         self.precheck_frame.setVisible(False)
         self.config_group.setVisible(True)
+        self.save_library_btn.setVisible(True)
         self.add_queue_btn.setVisible(True)
         self.download_now_btn.setVisible(True)
         self.playlist_options_frame.setVisible(False)
@@ -873,14 +954,24 @@ class DownloaderTab(QWidget):
         has_playlist = "list=" in text
         if has_video and has_playlist:
             self.noplaylist_check.setVisible(True)
+            self.noplaylist_check.blockSignals(True)
             # If "index=" is also present, check it by default to fulfill single-video intent
             if "index=" in text:
                 self.noplaylist_check.setChecked(True)
             else:
                 self.noplaylist_check.setChecked(False)
+            self.noplaylist_check.blockSignals(False)
         else:
             self.noplaylist_check.setVisible(False)
+            self.noplaylist_check.blockSignals(True)
             self.noplaylist_check.setChecked(False)
+            self.noplaylist_check.blockSignals(False)
+
+    @Slot(int)
+    def _on_noplaylist_changed(self, state: int):
+        # Trigger re-analysis if there is text in the input
+        if self.url_input.text().strip():
+            self._start_analysis()
 
     @staticmethod
     def _format_duration(duration_seconds: int) -> str:
@@ -1081,6 +1172,7 @@ class DownloaderTab(QWidget):
         self.active_download_task_id = task_id
 
         self.config_group.setVisible(False)
+        self.save_library_btn.setVisible(False)
         self.add_queue_btn.setVisible(False)
         self.download_now_btn.setVisible(False)
 

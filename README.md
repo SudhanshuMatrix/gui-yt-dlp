@@ -135,7 +135,7 @@ To package as an AppImage, you can use `appimage-builder`:
        id: org.gui-yt-dlp
        name: gui-yt-dlp
        icon: utilities-terminal
-       version: 1.0.0
+       version: 1.0.1
        exec: usr/bin/python3
        exec_args: "$APPDIR/usr/bin/gui-yt-dlp"
      apt:
@@ -217,5 +217,12 @@ flatpak run org.flatpak.gui-yt-dlp
 - **FFmpeg Engine**: Dynamically scans for FFmpeg and FFprobe binary locations on your system, indicating status in green (found) or red (missing).
 - **Concurrency & Themes**: Set concurrent download limits (1-10 files at a time) and select from custom application-wide UI themes (like *Midnight Obsidian*).
 - **Component Updates**: Check and upgrade the `yt-dlp` dependency directly in the background.
+
+### 4. Library Dashboard
+![Library Dashboard](screenshots/Library%20Dashboard.png)
+- **Persistent Bookmarks**: Save analyzed videos and playlists to download at a later time. Saved items are serialized persistently inside `~/.config/gui-yt-dlp/library.json`.
+- **Quick Save URL**: Paste a video or playlist URL directly to quick-add it to your library. It auto-fetches uploader details, titles, and thumbnails in the background.
+- **Config & Quick Download**: Load saved items straight back into the downloader layout to select custom formats, or start downloading immediately using default best-quality profiles.
+
 
 

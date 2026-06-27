@@ -4,7 +4,7 @@ VENV = .venv
 PYTHON = $(VENV)/bin/python
 PIP = $(VENV)/bin/pip
 APP_NAME = gui-yt-dlp
-VERSION = 1.0.0
+VERSION = 1.0.1
 
 .PHONY: all venv run build deb install uninstall clean exe
 

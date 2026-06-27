@@ -86,13 +86,73 @@ jobs:
           name: windows-artifacts
           path: dist/gui-yt-dlp-windows.exe
 
-  publish-release:
-    name: Create GitHub Release
-    runs-on: ubuntu-latest
-    needs: [build-linux, build-windows]
+  build-macos:
+    name: Build macOS Assets
+    runs-on: macos-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller pillow
+
+      - name: Build macOS Executable
+        run: |
+          pyinstaller --clean gui-yt-dlp.spec
+
+      - name: Prepare Executable name
+        run: |
+          mv dist/gui-yt-dlp dist/gui-yt-dlp-macos
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-artifacts
+          path: dist/gui-yt-dlp-macos
+
+  publish-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-windows, build-macos]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get Project Version
+        id: get_version
+        run: |
+          # Extract version from pyproject.toml dynamically
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Prepare Release Notes
+        id: prep_notes
+        run: |
+          # Try to get the tag annotation/message
+          TAG_MSG=$(git tag -l -n99 ${{ github.ref_name }} | sed "s/^${{ github.ref_name }} //g" | sed 's/^ *//')
+          
+          if [ -n "$TAG_MSG" ] && [ "$TAG_MSG" != "${{ github.ref_name }}" ]; then
+            echo "$TAG_MSG" > release_body.txt
+          elif [ -f "release-notes.md" ]; then
+            cat release-notes.md > release_body.txt
+          elif [ -f "CHANGELOG.md" ]; then
+            cat CHANGELOG.md > release_body.txt
+          else
+            echo "### Changes in this Release" > release_body.txt
+            git log -1 --pretty=format:"* %s (%h)" >> release_body.txt
+          fi
 
       - name: Download Linux Artifacts
         uses: actions/download-artifact@v4
@@ -106,25 +166,25 @@ jobs:
           name: windows-artifacts
           path: ./release-assets
 
-      - name: Get Project Version
-        id: get_version
-        run: |
-          # Extract version from pyproject.toml dynamically
-          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Download macOS Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-artifacts
+          path: ./release-assets
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: yt-dlp Flow v${{ steps.get_version.outputs.version }}
           tag_name: ${{ github.ref_name }}
+          body_path: release_body.txt
           files: |
-            release-assets/gui-yt-dlp_1.0.0_amd64.deb
+            release-assets/*.deb
             release-assets/gui-yt-dlp-linux
             release-assets/gui-yt-dlp-windows.exe
+            release-assets/gui-yt-dlp-macos
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -8,10 +8,12 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QPixmap, QIcon
 from .downloader_tab import DownloaderTab
 from .queue_tab import QueueTab
+from .library_tab import LibraryTab
 from .settings_tab import SettingsTab, YtdlUpdateWorker
 from .themes import get_stylesheet
 from ..config import config_manager
 from ..utils.logger import get_logger
+from ..utils.network_monitor import NetworkMonitor
 
 logger = get_logger("main_window")
 
@@ -36,6 +38,11 @@ class MainWindow(QMainWindow):
         # Trigger background auto-update if enabled (skipped for system-installed deb packages)
         if config_manager.get("auto_update", True) and not getattr(sys, 'frozen', False):
             self._trigger_silent_update()
+
+        # Start network monitor
+        self.network_monitor = NetworkMonitor()
+        self.network_monitor.status_changed.connect(self._on_network_status_changed)
+        self.network_monitor.start()
 
     def _init_ui(self):
         # Main widget and layout
@@ -85,7 +92,7 @@ class MainWindow(QMainWindow):
         """)
         title_icon_layout.addWidget(brand_label)
         
-        version_label = QLabel("v1.0.0")
+        version_label = QLabel("v1.0.1")
         version_label.setStyleSheet("color: #71717a; font-size: 11px; margin-top: 6px;")
         title_icon_layout.addWidget(version_label)
         header_layout.addLayout(title_icon_layout)
@@ -106,10 +113,12 @@ class MainWindow(QMainWindow):
         # Instantiate tabs
         self.downloader_tab = DownloaderTab(self)
         self.queue_tab = QueueTab()
+        self.library_tab = LibraryTab(self)
         self.settings_tab = SettingsTab(self)
         
         self.tab_widget.addTab(self.downloader_tab, "Downloader")
         self.tab_widget.addTab(self.queue_tab, "Queue")
+        self.tab_widget.addTab(self.library_tab, "Library")
         self.tab_widget.addTab(self.settings_tab, "Settings")
         
         main_layout.addWidget(self.tab_widget)
@@ -149,3 +158,25 @@ class MainWindow(QMainWindow):
         else:
             logger.warning(f"Silent update check completed: {message}")
             self.statusBar().showMessage("yt-dlp update check completed.")
+
+    @Slot(bool)
+    def _on_network_status_changed(self, is_online: bool):
+        from ..download_manager import download_manager
+        download_manager.is_network_online = is_online
+        download_manager.handle_network_status(is_online)
+        
+        # Update header status and status bar
+        if is_online:
+            self.header_status.setText("Ready")
+            self.header_status.setStyleSheet("color: #a1a1aa; font-size: 12px;")
+            self.statusBar().showMessage("Network connected.")
+        else:
+            self.header_status.setText("Offline (Downloads Paused)")
+            self.header_status.setStyleSheet("color: #ef4444; font-size: 12px; font-weight: bold;")
+            self.statusBar().showMessage("Network disconnected! Active downloads paused.")
+
+    def closeEvent(self, event):
+        if hasattr(self, 'network_monitor'):
+            self.network_monitor.stop()
+            self.network_monitor.wait()
+        event.accept()

@@ -20,6 +20,8 @@ class DownloadManager(QObject):
         self.tasks: Dict[str, Dict[str, Any]] = OrderedDict()
         self.active_workers: Dict[str, DownloadWorker] = {}
         self.terminating_workers = set()
+        self.is_network_online = True
+        self.paused_by_network: List[str] = []
 
     def add_task(self, url: str, title: str, ydl_opts: Dict[str, Any], thumbnail_local_path: Optional[str] = None) -> str:
         """Add a new download task to the queue."""
@@ -83,6 +85,33 @@ class DownloadManager(QObject):
                 active_count += 1
                 if active_count >= max_concurrency:
                     break
+
+    def handle_network_status(self, is_online: bool):
+        """Called when network status changes."""
+        self.is_network_online = is_online
+        if not is_online:
+            # Network went down
+            downloading_ids = [tid for tid, t in self.tasks.items() if t['status'] == 'Downloading']
+            if downloading_ids:
+                logger.info(f"Network disconnected. Automatically pausing active tasks: {downloading_ids}")
+                for tid in downloading_ids:
+                    if tid not in self.paused_by_network:
+                        self.paused_by_network.append(tid)
+                    if tid in self.tasks:
+                        self.tasks[tid]['logs'].append("[App] Network disconnected. Pausing download automatically.")
+                        self.task_updated.emit(tid, {'new_log': "[App] Network disconnected. Pausing download automatically."})
+                    self.pause_task(tid)
+        else:
+            # Network came back up
+            if self.paused_by_network:
+                logger.info(f"Network restored. Automatically resuming tasks: {self.paused_by_network}")
+                to_resume = self.paused_by_network.copy()
+                self.paused_by_network.clear()
+                for tid in to_resume:
+                    if tid in self.tasks and self.tasks[tid]['status'] == 'Paused':
+                        self.tasks[tid]['logs'].append("[App] Network restored. Resuming download automatically.")
+                        self.task_updated.emit(tid, {'new_log': "[App] Network restored. Resuming download automatically."})
+                        self.resume_task(tid)
 
     def _start_task(self, task_id: str):
         """Start a specific download task."""
@@ -320,6 +349,36 @@ class DownloadManager(QObject):
         if task['status'] == 'Cancelled':
             return
             
+        # Check if the error is a network connection error
+        is_network_err = any(kw in error_msg.lower() for kw in [
+            "connection refused", "connection timed out", "name or service not known", 
+            "temporary failure in name resolution", "network is unreachable", "timed out", 
+            "http error 503", "http error 502", "http error 504", "http error 408", 
+            "ssl: certificate_verify_failed", "urllib.error.urlerror", "gai error"
+        ])
+        
+        if is_network_err or not self.is_network_online:
+            logger.info(f"Task {task_id} encountered a network error. Pausing it instead of failing: {error_msg}")
+            task['logs'].append(f"[App] Network error: {error_msg}. Pausing download automatically.")
+            self.task_updated.emit(task_id, {'new_log': f"[App] Network error: {error_msg}. Pausing download automatically."})
+            
+            if task_id not in self.paused_by_network:
+                self.paused_by_network.append(task_id)
+                
+            task['status'] = 'Paused'
+            task['speed'] = '0 B/s'
+            task['eta'] = 'Paused'
+            
+            self.task_updated.emit(task_id, {
+                'status': 'Paused',
+                'speed': '0 B/s',
+                'eta': 'Paused'
+            })
+            
+            self._cleanup_worker(task_id)
+            self.process_queue()
+            return
+
         task['status'] = 'Failed'
         task['error_msg'] = error_msg
         task['speed'] = '0 B/s'

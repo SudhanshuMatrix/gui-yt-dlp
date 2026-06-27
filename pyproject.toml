@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gui-yt-dlp"
-version = "1.0.0"
+version = "1.0.1"
 description = "A modern PySide6 GUI frontend for yt-dlp"
 readme = "README.md"
 authors = [

@@ -47,11 +47,12 @@ class VideoAnalyzer(QThread):
             # Quick configuration for extraction
             ydl_opts = {
                 'skip_download': True,
-                'extract_flat': 'in_playlist', # Optimization: extract playlist entries list quickly without fetching stream formats for every video
                 'no_warnings': True,
                 'quiet': True,
                 'noplaylist': self.noplaylist,
             }
+            if not self.noplaylist:
+                ydl_opts['extract_flat'] = 'in_playlist'
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 if self.cancelled:
