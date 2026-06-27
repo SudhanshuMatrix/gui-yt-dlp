@@ -176,7 +176,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: yt-dlp Flow v${{ steps.get_version.outputs.version }}
-          tag_name: ${{ github.ref_name }}
+          tag_name: v${{ steps.get_version.outputs.version }}
           body_path: release_body.txt
           files: |
             release-assets/*.deb
