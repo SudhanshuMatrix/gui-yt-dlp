@@ -18,6 +18,10 @@ Get the pre-compiled standalone application for your platform from the [Releases
 * **Standalone Portable Executable (.exe)**: [Download latest gui-yt-dlp-windows.exe](https://github.com/SudhanshuMatrix/gui-yt-dlp/releases/latest)
   * *Single portable Windows executable (no installation required).*
 
+### 🍎 macOS (Intel / Apple Silicon)
+* **Standalone Portable Binary**: [Download latest gui-yt-dlp-macos](https://github.com/SudhanshuMatrix/gui-yt-dlp/releases/latest)
+  * *Single portable macOS binary (no installation required).*
+
 ---
 
 ## 📂 Project Structure
