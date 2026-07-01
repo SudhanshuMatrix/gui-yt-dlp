@@ -5,7 +5,7 @@ from PySide6.QtCore import Qt, Slot, QThread, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
     QPushButton, QSpinBox, QComboBox, QCheckBox, QGroupBox, 
-    QFileDialog, QMessageBox
+    QFileDialog, QMessageBox, QScrollArea, QFrame, QFormLayout
 )
 from ..config import config_manager
 from ..gui.themes import THEMES
@@ -75,84 +75,136 @@ class SettingsTab(QWidget):
         self._init_ui()
 
     def _init_ui(self):
-        layout = QVBoxLayout(self)
+        # 1. Main layout for the tab setting up the Scroll Area
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QFrame.NoFrame)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        
+        scroll_content = QWidget()
+        scroll_content.setObjectName("scrollContent")
+        # Ensure scroll background is transparent only for the container itself
+        scroll_content.setStyleSheet("QWidget#scrollContent { background-color: transparent; }")
+        
+        layout = QVBoxLayout(scroll_content)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(16)
 
-        # 1. Download Path Group
+        # 2. Download Path Group
         path_group = QGroupBox("Directories & Paths")
-        path_layout = QVBoxLayout(path_group)
+        path_layout = QFormLayout(path_group)
+        path_layout.setContentsMargins(16, 20, 16, 16)
         path_layout.setSpacing(12)
+        path_layout.setLabelAlignment(Qt.AlignLeft)
+        path_layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
         
         # Download Folder
-        folder_label_layout = QHBoxLayout()
-        folder_label_layout.addWidget(QLabel("Default Download Folder:"))
-        path_layout.addLayout(folder_label_layout)
-        
-        folder_layout = QHBoxLayout()
+        folder_widget = QWidget()
+        folder_layout = QHBoxLayout(folder_widget)
+        folder_layout.setContentsMargins(0, 0, 0, 0)
+        folder_layout.setSpacing(8)
         self.download_path_input = QLineEdit(config_manager.get("download_directory"))
         self.download_path_input.textChanged.connect(self._save_download_path)
         folder_layout.addWidget(self.download_path_input)
-        
         self.folder_browse_btn = QPushButton("Browse...")
         self.folder_browse_btn.clicked.connect(self._browse_download_folder)
         folder_layout.addWidget(self.folder_browse_btn)
-        path_layout.addLayout(folder_layout)
+        path_layout.addRow("Default Download Folder:", folder_widget)
 
         # FFmpeg Path
-        ffmpeg_label_layout = QHBoxLayout()
-        ffmpeg_label_layout.addWidget(QLabel("Custom FFmpeg Directory (Optional):"))
-        path_layout.addLayout(ffmpeg_label_layout)
-        
-        ffmpeg_layout = QHBoxLayout()
+        ffmpeg_widget = QWidget()
+        ffmpeg_layout = QHBoxLayout(ffmpeg_widget)
+        ffmpeg_layout.setContentsMargins(0, 0, 0, 0)
+        ffmpeg_layout.setSpacing(8)
         self.ffmpeg_path_input = QLineEdit(config_manager.get("ffmpeg_path"))
         self.ffmpeg_path_input.textChanged.connect(self._save_ffmpeg_path)
         ffmpeg_layout.addWidget(self.ffmpeg_path_input)
-        
         self.ffmpeg_browse_btn = QPushButton("Browse...")
         self.ffmpeg_browse_btn.clicked.connect(self._browse_ffmpeg_folder)
         ffmpeg_layout.addWidget(self.ffmpeg_browse_btn)
-        path_layout.addLayout(ffmpeg_layout)
+        path_layout.addRow("Custom FFmpeg Directory (Optional):", ffmpeg_widget)
 
         # FFmpeg version label
         self.ffmpeg_ver_label = QLabel("FFmpeg Status: Checking...")
         self.ffmpeg_ver_label.setStyleSheet("color: #71717a; font-size: 11px;")
-        path_layout.addWidget(self.ffmpeg_ver_label)
+        path_layout.addRow(self.ffmpeg_ver_label)
         
         layout.addWidget(path_group)
 
-        # 2. Preferences Group
+        # 3. Preferences Group
         pref_group = QGroupBox("Download Preferences")
-        pref_layout = QVBoxLayout(pref_group)
+        pref_layout = QFormLayout(pref_group)
+        pref_layout.setContentsMargins(16, 20, 16, 16)
         pref_layout.setSpacing(12)
+        pref_layout.setLabelAlignment(Qt.AlignLeft)
+        pref_layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
         
         # Concurrency limit
-        concurrency_layout = QHBoxLayout()
-        concurrency_layout.addWidget(QLabel("Max Concurrent Downloads:"))
         self.concurrency_spin = QSpinBox()
         self.concurrency_spin.setRange(1, 10)
         self.concurrency_spin.setValue(config_manager.get("concurrency", 3))
         self.concurrency_spin.valueChanged.connect(self._save_concurrency)
-        concurrency_layout.addWidget(self.concurrency_spin)
-        concurrency_layout.addStretch()
-        pref_layout.addLayout(concurrency_layout)
+        self.concurrency_spin.setFixedWidth(100)
+        pref_layout.addRow("Max Concurrent Downloads:", self.concurrency_spin)
         
         # Theme dropdown
-        theme_layout = QHBoxLayout()
-        theme_layout.addWidget(QLabel("App Theme Selection:"))
         self.theme_combo = QComboBox()
         self.theme_combo.addItems(list(THEMES.keys()))
         self.theme_combo.setCurrentText(config_manager.get("theme", "Midnight Obsidian"))
         self.theme_combo.currentTextChanged.connect(self._save_theme)
-        theme_layout.addWidget(self.theme_combo)
-        theme_layout.addStretch()
-        pref_layout.addLayout(theme_layout)
+        self.theme_combo.setFixedWidth(180)
+        pref_layout.addRow("App Theme Selection:", self.theme_combo)
 
         layout.addWidget(pref_group)
 
-        # 3. System Options & Updates Group
+        # 4. Speed & Network Optimization Group
+        speed_group = QGroupBox("Speed & Network Optimization")
+        speed_layout = QFormLayout(speed_group)
+        speed_layout.setContentsMargins(16, 20, 16, 16)
+        speed_layout.setSpacing(12)
+        speed_layout.setLabelAlignment(Qt.AlignLeft)
+        speed_layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
+
+        # Bypass Throttling Checkbox
+        self.bypass_throttling_check = QCheckBox("Bypass YouTube download speed throttling (impersonate player clients)")
+        self.bypass_throttling_check.setChecked(config_manager.get("bypass_throttling", True))
+        self.bypass_throttling_check.stateChanged.connect(self._save_bypass_throttling)
+        speed_layout.addRow(self.bypass_throttling_check)
+
+        # Concurrent fragments spinbox
+        self.fragments_spin = QSpinBox()
+        self.fragments_spin.setRange(1, 16)
+        self.fragments_spin.setValue(config_manager.get("concurrent_fragments", 5))
+        self.fragments_spin.valueChanged.connect(self._save_concurrent_fragments)
+        self.fragments_spin.setFixedWidth(100)
+        speed_layout.addRow("Concurrent Fragment Downloads (Parallel threads per video):", self.fragments_spin)
+
+        # HTTP chunk size
+        self.chunk_combo = QComboBox()
+        self.chunk_combo.addItems(["Disabled (Default)", "1 MB", "2 MB", "5 MB", "10 MB"])
+        self.chunk_combo.setCurrentText(config_manager.get("http_chunk_size", "Disabled (Default)"))
+        self.chunk_combo.currentTextChanged.connect(self._save_http_chunk_size)
+        self.chunk_combo.setFixedWidth(180)
+        speed_layout.addRow("HTTP Chunk Size (can bypass throttling on some networks):", self.chunk_combo)
+
+        # Socket Timeout spinbox
+        self.timeout_spin = QSpinBox()
+        self.timeout_spin.setRange(5, 120)
+        self.timeout_spin.setValue(config_manager.get("socket_timeout", 20))
+        self.timeout_spin.valueChanged.connect(self._save_socket_timeout)
+        self.timeout_spin.setFixedWidth(100)
+        speed_layout.addRow("Connection Timeout (seconds):", self.timeout_spin)
+
+        layout.addWidget(speed_group)
+
+        # 5. System Options & Updates Group
         system_group = QGroupBox("System & Updates")
         system_layout = QVBoxLayout(system_group)
+        system_layout.setContentsMargins(16, 20, 16, 16)
         system_layout.setSpacing(12)
         
         # Auto Update
@@ -175,6 +227,9 @@ class SettingsTab(QWidget):
         
         layout.addWidget(system_group)
         layout.addStretch()
+
+        self.scroll_area.setWidget(scroll_content)
+        main_layout.addWidget(self.scroll_area)
 
         # Initial checks
         self._check_ffmpeg()
@@ -228,6 +283,22 @@ class SettingsTab(QWidget):
     @Slot(int)
     def _save_auto_update(self, state: int):
         config_manager.set("auto_update", state == Qt.Checked.value)
+
+    @Slot(int)
+    def _save_bypass_throttling(self, state: int):
+        config_manager.set("bypass_throttling", state == Qt.Checked.value)
+
+    @Slot(int)
+    def _save_concurrent_fragments(self, val: int):
+        config_manager.set("concurrent_fragments", val)
+
+    @Slot(str)
+    def _save_http_chunk_size(self, text: str):
+        config_manager.set("http_chunk_size", text)
+
+    @Slot(int)
+    def _save_socket_timeout(self, val: int):
+        config_manager.set("socket_timeout", val)
 
     @Slot()
     def _update_ytdl(self):

@@ -17,7 +17,11 @@ DEFAULT_SETTINGS = {
     "preferred_audio_format": "mp3",
     "audio_quality": "192",
     "write_auto_subs": False,
-    "subtitle_lang": "en"
+    "subtitle_lang": "en",
+    "concurrent_fragments": 5,
+    "http_chunk_size": "Disabled (Default)",
+    "bypass_throttling": True,
+    "socket_timeout": 20
 }
 
 class AppConfig:

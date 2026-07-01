@@ -220,6 +220,7 @@ flatpak run org.flatpak.gui-yt-dlp
 - **Directory Paths**: Specify default download destination directories and configure path shortcuts.
 - **FFmpeg Engine**: Dynamically scans for FFmpeg and FFprobe binary locations on your system, indicating status in green (found) or red (missing).
 - **Concurrency & Themes**: Set concurrent download limits (1-10 files at a time) and select from custom application-wide UI themes (like *Midnight Obsidian*).
+- **Speed & Network Optimization**: Configure concurrent fragment downloads (parallel download threads per video), custom HTTP chunk sizes, socket connection timeouts, and client player overrides to bypass YouTube's rate limiting and saturate high-speed internet connections.
 - **Component Updates**: Check and upgrade the `yt-dlp` dependency directly in the background.
 
 ### <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/lucide/library.svg?color=%23e6edf3"><img src="https://api.iconify.design/lucide/library.svg?color=%2324292f" width="18" height="18" align="absmiddle" alt="library"></picture> 4. Library Dashboard

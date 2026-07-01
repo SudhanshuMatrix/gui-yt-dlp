@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.0.2] - 2026-07-01
+
+### Added
+- **Speed & Network Optimization Settings**:
+  - Added concurrent fragment download configuration to allow parallel downloading of up to 16 stream fragments (saturating high-speed connections to match speed test capacities).
+  - Integrated automated player client signature overrides (`-android_sdkless`) to bypass YouTube's modern adaptive download speed throttling.
+  - Added custom HTTP chunk sizing controls and connection socket timeout configuration.
+  - Exposed all network controls in a new **Speed & Network Optimization** settings group.
+- **Responsive Settings Dashboard Layout**:
+  - Refactored Settings Tab to utilize a scrollable container (`QScrollArea`), preventing layout compression or widget collapse under custom window sizing.
+  - Implemented `QFormLayout` for Settings sections to provide aligned label-to-control columns.
+  - Explicitly styled group boxes with card backgrounds (`bg_card`) matching the selected theme.
+
+### Fixed
+- Resolved layout overlap and transparency issues in the settings dashboard caused by cascading stylesheet inheritance on the scroll content container.
+
+---
+
 ## [1.0.1] - 2026-06-27
 
 ### Added

@@ -189,6 +189,24 @@ class LibraryTab(QWidget):
             'format': 'bestvideo+bestaudio/best',
         }
         
+        # Add Speed & Performance optimizations from settings
+        concurrent_frags = config_manager.get("concurrent_fragments", 5)
+        ydl_opts['concurrent_fragment_downloads'] = concurrent_frags
+
+        chunk_size = config_manager.get("http_chunk_size", "Disabled (Default)")
+        if chunk_size != "Disabled (Default)":
+            ydl_opts['http_chunk_size'] = chunk_size.replace(" MB", "M").replace(" KB", "K")
+
+        if config_manager.get("bypass_throttling", True):
+            ydl_opts['extractor_args'] = {
+                'youtube': {
+                    'player_client': ['default', '-android_sdkless']
+                }
+            }
+
+        socket_timeout = config_manager.get("socket_timeout", 20)
+        ydl_opts['socket_timeout'] = socket_timeout
+        
         ffmpeg_path = config_manager.get("ffmpeg_path")
         if ffmpeg_path:
             ydl_opts['ffmpeg_location'] = ffmpeg_path

@@ -296,6 +296,15 @@ def get_stylesheet(theme_name: str) -> str:
         border-right: 1px solid {palette["border"]};
     }}
 
+    /* Scroll Areas */
+    QScrollArea {{
+        background-color: transparent;
+        border: none;
+    }}
+    QScrollArea > QWidget > QWidget {{
+        background-color: transparent;
+    }}
+
     /* Scrollbars */
     QScrollBar:vertical {{
         border: none;
@@ -381,10 +390,10 @@ def get_stylesheet(theme_name: str) -> str:
     
     /* Group Boxes */
     QGroupBox {{
+        background-color: {palette["bg_card"]};
         border: 1px solid {palette["border"]};
         border-radius: 8px;
-        margin-top: 12px;
-        padding-top: 16px;
+        margin-top: 16px;
         font-weight: bold;
     }}
     

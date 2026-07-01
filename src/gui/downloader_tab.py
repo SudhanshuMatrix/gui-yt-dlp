@@ -131,6 +131,7 @@ class DownloaderTab(QWidget):
         # Download Config Group
         self.config_group = QGroupBox("Download Options")
         self.config_group_layout = QVBoxLayout(self.config_group)
+        self.config_group_layout.setContentsMargins(16, 20, 16, 16)
         self.config_group_layout.setSpacing(12)
         
         # Mode selector
@@ -661,6 +662,25 @@ class DownloaderTab(QWidget):
             'quiet': True,
             'no_warnings': True,
         }
+
+        # Add Speed & Performance optimizations from settings
+        concurrent_frags = config_manager.get("concurrent_fragments", 5)
+        opts['concurrent_fragment_downloads'] = concurrent_frags
+
+        chunk_size = config_manager.get("http_chunk_size", "Disabled (Default)")
+        if chunk_size != "Disabled (Default)":
+            # Map e.g. "5 MB" to "5M"
+            opts['http_chunk_size'] = chunk_size.replace(" MB", "M").replace(" KB", "K")
+
+        if config_manager.get("bypass_throttling", True):
+            opts['extractor_args'] = {
+                'youtube': {
+                    'player_client': ['default', '-android_sdkless']
+                }
+            }
+
+        socket_timeout = config_manager.get("socket_timeout", 20)
+        opts['socket_timeout'] = socket_timeout
 
         mode_idx = self.mode_combo.currentIndex()
         
