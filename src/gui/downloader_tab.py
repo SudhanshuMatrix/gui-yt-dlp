@@ -12,6 +12,7 @@ from ..download_manager import download_manager
 from ..config import config_manager
 from ..utils.logger import get_logger
 from ..utils.speed_test import SpeedTestWorker
+from ..utils.url_sanitizer import sanitize_url, is_valid_url
 
 logger = get_logger("downloader_tab")
 
@@ -28,8 +29,29 @@ class DownloaderTab(QWidget):
         self.terminating_analyzers = set()
         self.speed_tester = None
 
+        self.setAcceptDrops(True)
         self._init_ui()
         download_manager.task_updated.connect(self._on_task_updated_downloader)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasText() or event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        url_text = ""
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            if urls:
+                url_text = urls[0].toLocalFile() or urls[0].toString()
+        elif event.mimeData().hasText():
+            url_text = event.mimeData().text()
+
+        clean = sanitize_url(url_text)
+        if clean:
+            self.url_input.setText(clean)
+            self._start_analysis()
+            event.acceptProposedAction()
+
 
     def _init_ui(self):
         layout = QVBoxLayout(self)

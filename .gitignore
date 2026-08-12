@@ -14,6 +14,11 @@ env/
 build/
 dist/
 
+# Python packaging metadata
+*.egg-info/
+pip-wheel-metadata/
+__pypackages__/
+
 # Debian package build outputs
 *.deb
 

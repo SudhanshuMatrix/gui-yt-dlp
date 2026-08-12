@@ -4,17 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gui-yt-dlp"
-version = "1.0.2"
-description = "A modern PySide6 GUI frontend for yt-dlp"
+version = "1.0.3"
+description = "A modern PySide6 desktop GUI frontend for yt-dlp"
 readme = "README.md"
 authors = [
     { name = "Sudhanshu Singh" }
 ]
+maintainers = [
+    { name = "Sudhanshu Singh" }
+]
+license = { text = "MIT" }
+keywords = ["yt-dlp", "pyside6", "gui", "youtube-dl", "downloader", "video", "audio"]
 classifiers = [
-    "Programming Language :: Python :: 3",
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
     "Environment :: X11 Applications :: Qt",
+    "Topic :: Multimedia :: Video",
 ]
 requires-python = ">=3.12"
 dependencies = [
@@ -23,5 +31,34 @@ dependencies = [
     "requests>=2.31.0"
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-qt>=4.4.0",
+    "ruff>=0.3.0",
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "mypy>=1.9.0",
+    "pre-commit>=3.6.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/SudhanshuMatrix/gui-yt-dlp"
+Repository = "https://github.com/SudhanshuMatrix/gui-yt-dlp"
+Documentation = "https://github.com/SudhanshuMatrix/gui-yt-dlp#readme"
+Issues = "https://github.com/SudhanshuMatrix/gui-yt-dlp/issues"
+
 [project.gui-scripts]
 gui-yt-dlp = "src.main:main"
+
+[tool.black]
+line-length = 100
+target-version = ['py312']
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.isort]
+profile = "black"
+line_length = 100

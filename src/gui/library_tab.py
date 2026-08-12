@@ -9,6 +9,7 @@ from PySide6.QtGui import QPixmap
 from ..utils.library_manager import library_manager
 from ..yt_dlp_worker import VideoAnalyzer
 from ..utils.logger import get_logger
+from ..utils.url_sanitizer import sanitize_url, is_valid_url
 
 logger = get_logger("library_tab")
 
@@ -235,13 +236,9 @@ class LibraryTab(QWidget):
 
     @Slot()
     def _quick_add(self):
-        url = self.url_input.text().strip()
-        if not url:
-            QMessageBox.warning(self, "Invalid URL", "Please enter a valid URL first.")
-            return
-
-        if not url.startswith("http://") and not url.startswith("https://"):
-            QMessageBox.warning(self, "Invalid URL", "URL must start with http:// or https://")
+        url = sanitize_url(self.url_input.text())
+        if not is_valid_url(url):
+            QMessageBox.warning(self, "Invalid URL", "Please enter a valid HTTP or HTTPS URL.")
             return
 
         self.add_btn.setEnabled(False)

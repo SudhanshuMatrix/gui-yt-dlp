@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Lint, Type Check & Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install System Dependencies for PySide6
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1-mesa-dev libxkbcommon-x11-0 libxcb-cursor0
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+
+      - name: Code Formatting Check (black)
+        run: |
+          black --check src tests
+
+      - name: Linting (ruff)
+        run: |
+          ruff check src tests
+
+      - name: Type Checking (mypy)
+        run: |
+          mypy src
+
+      - name: Run Tests (pytest)
+        run: |
+          QT_QPA_PLATFORM=offscreen pytest tests/
