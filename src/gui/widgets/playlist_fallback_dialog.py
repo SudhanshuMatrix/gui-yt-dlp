@@ -1,15 +1,24 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
-    QWidget, QFrame, QComboBox, QPushButton, QCheckBox,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
 
 
 class VideoFallbackRow(QFrame):
     """One row per incompatible video: skip toggle + video/audio format selectors."""
 
-    def __init__(self, entry: Dict[str, Any], index: int, parent=None):
+    def __init__(self, entry: dict[str, Any], index: int, parent=None):
         super().__init__(parent)
         self.entry = entry
         self.setObjectName("cardFrame")
@@ -72,7 +81,7 @@ class VideoFallbackRow(QFrame):
         self.audio_combo.setEnabled(enabled)
 
     # ── Public ───────────────────────────────────────────────────────
-    def get_selection(self) -> Optional[Tuple[str, str, str, str]]:
+    def get_selection(self) -> tuple[str, str, str, str] | None:
         """Return (url, video_fmt_id, audio_fmt_id, title) or None if skipped."""
         if not self.include_check.isChecked():
             return None
@@ -100,7 +109,7 @@ class PlaylistFallbackDialog(QDialog):
 
     def __init__(
         self,
-        incompatible_entries: List[Dict[str, Any]],
+        incompatible_entries: list[dict[str, Any]],
         original_format_desc: str,
         parent=None,
     ):
@@ -108,7 +117,7 @@ class PlaylistFallbackDialog(QDialog):
         self.setWindowTitle("Format Unavailable — Select Fallback")
         self.setMinimumSize(720, 520)
         self.resize(820, 600)
-        self.rows: List[VideoFallbackRow] = []
+        self.rows: list[VideoFallbackRow] = []
         self._build_ui(incompatible_entries, original_format_desc)
 
     # ── Private ──────────────────────────────────────────────────────

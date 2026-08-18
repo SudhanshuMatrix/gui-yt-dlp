@@ -1,18 +1,18 @@
-import os
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 APP_NAME = "gui-yt-dlp"
 DEFAULT_VERSION = "1.0.3"
 
 try:
     from importlib.metadata import version as pkg_version
+
     APP_VERSION = pkg_version(APP_NAME)
 except Exception:
     APP_VERSION = DEFAULT_VERSION
 
-DEFAULT_SETTINGS: Dict[str, Any] = {
+DEFAULT_SETTINGS: dict[str, Any] = {
     "download_directory": str(Path.home() / "Downloads"),
     "ffmpeg_path": "",
     "concurrency": 3,
@@ -37,7 +37,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
 
 def get_assets_dir() -> Path:
     """Returns absolute path to gui/assets directory across frozen and source modes."""
-    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         base_dir = Path(sys._MEIPASS) / "src" / "gui" / "assets"
         if not base_dir.exists():
             base_dir = Path(sys._MEIPASS) / "assets"

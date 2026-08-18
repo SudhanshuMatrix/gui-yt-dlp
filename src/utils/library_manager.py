@@ -3,7 +3,8 @@ import os
 import shutil
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from .logger import get_logger
 from .url_sanitizer import sanitize_url
 
@@ -14,7 +15,7 @@ class LibraryManager:
     def __init__(self):
         self.config_dir: Path = Path.home() / ".config" / "gui-yt-dlp"
         self.library_file: Path = self.config_dir / "library.json"
-        self.items: List[Dict[str, Any]] = []
+        self.items: list[dict[str, Any]] = []
         self.load()
 
     def load(self) -> None:
@@ -54,7 +55,7 @@ class LibraryManager:
         uploader: str,
         duration: str,
         type_str: str,
-        thumbnail_path: Optional[str] = None,
+        thumbnail_path: str | None = None,
     ) -> bool:
         """Add a new item to the library, avoiding duplicate URLs."""
         clean_url = sanitize_url(url)
@@ -63,7 +64,7 @@ class LibraryManager:
                 logger.info(f"URL {clean_url} already in library.")
                 return False
 
-        saved_thumb_path: Optional[str] = None
+        saved_thumb_path: str | None = None
         if thumbnail_path and os.path.exists(thumbnail_path):
             try:
                 lib_thumb_dir = self.config_dir / "library_thumbnails"

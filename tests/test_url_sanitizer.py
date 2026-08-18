@@ -2,7 +2,10 @@ from src.utils.url_sanitizer import is_valid_url, sanitize_url
 
 
 def test_sanitize_url():
-    assert sanitize_url("  https://www.youtube.com/watch?v=123  \n\r") == "https://www.youtube.com/watch?v=123"
+    assert (
+        sanitize_url("  https://www.youtube.com/watch?v=123  \n\r")
+        == "https://www.youtube.com/watch?v=123"
+    )
     assert sanitize_url(None) == ""
     assert sanitize_url("http://example.com/test\tfile") == "http://example.com/testfile"
 

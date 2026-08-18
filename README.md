@@ -47,11 +47,22 @@ gui-yt-dlp/
 │   │   ├── settings_tab.py     # Directories paths, theme selection, & live updater
 │   │   ├── themes.py           # Custom QSS stylesheets for dark mode themes
 │   │   └── assets/
-│   │       └── logo.jpeg       # Application logo and window icon
+│   │       ├── logo.jpeg       # Application logo preview
+│   │       ├── logo.png        # High-res logo source image
+│   │       └── logo.ico        # Windows executable branding icon
 │   └── utils/
 │       ├── __init__.py
 │       ├── ffmpeg_check.py     # FFmpeg & FFprobe location and version detection
 │       └── logger.py           # Application console and file logger
+└── tests/                      # PyTest automated test suite
+    ├── test_config.py          # Configuration unit tests
+    ├── test_constants.py       # Constants unit tests
+    ├── test_download_manager.py # Task queue and downloads unit tests
+    ├── test_ffmpeg_check.py    # FFmpeg checks unit tests
+    ├── test_library_manager.py # Library bookmarks unit tests
+    ├── test_main.py            # GUI elements and options tests
+    └── test_url_sanitizer.py   # Sanitizer unit tests
+
 ```
 
 ---

@@ -10,9 +10,10 @@ if __name__ == "__main__" and __package__ is None:
 from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
+
+from .config import config_manager
 from .constants import APP_NAME, APP_VERSION, get_asset_path
 from .gui.main_window import MainWindow
-from .config import config_manager
 from .utils.logger import get_logger
 
 logger = get_logger("main")
@@ -39,7 +40,7 @@ def main():
 
     logger.info(f"{APP_NAME} v{APP_VERSION} started.")
     ret_code = app.exec()
-    
+
     # Save any pending config changes on exit
     config_manager.flush()
     sys.exit(ret_code)

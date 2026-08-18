@@ -1,9 +1,11 @@
 import os
 import time
-from typing import Any, Dict, Optional
+from typing import Any
+
 import requests
 import yt_dlp
 from PySide6.QtCore import QObject, QThread, Signal
+
 from .utils.logger import get_logger
 from .utils.url_sanitizer import sanitize_url
 
@@ -49,7 +51,7 @@ class VideoAnalyzer(QThread):
     def run(self):
         try:
             logger.info(f"Analyzing URL: {self.url} (noplaylist={self.noplaylist})")
-            ydl_opts: Dict[str, Any] = {
+            ydl_opts: dict[str, Any] = {
                 "skip_download": True,
                 "no_warnings": True,
                 "quiet": True,
@@ -108,7 +110,7 @@ class DownloadWorker(QThread):
     error = Signal(str)
     format_unavailable = Signal(dict)
 
-    def __init__(self, url: str, ydl_opts: Dict[str, Any]):
+    def __init__(self, url: str, ydl_opts: dict[str, Any]):
         super().__init__()
         self.url = sanitize_url(url)
         self.ydl_opts = ydl_opts.copy()
@@ -171,9 +173,7 @@ class DownloadWorker(QThread):
                     self.log_received.emit(
                         f"[App] Format not available: video={video_fmt}, audio={audio_fmt}"
                     )
-                    raise FormatUnavailableException(
-                        "Requested format is not available.", info
-                    )
+                    raise FormatUnavailableException("Requested format is not available.", info)
 
                 self.log_received.emit(
                     "[App] Selected format is available. Proceeding with download..."
@@ -198,7 +198,7 @@ class DownloadWorker(QThread):
                 logger.error(f"Download worker error: {e}")
                 self.error.emit(str(e))
 
-    def _progress_hook(self, d: Dict[str, Any]):
+    def _progress_hook(self, d: dict[str, Any]):
         if self._cancelled:
             raise Exception("Download cancelled by user.")
 
@@ -216,21 +216,25 @@ class DownloadWorker(QThread):
             filename = d.get("filename", "")
             self.current_filename = filename
 
-            self.progress_updated.emit({
-                "status": "downloading",
-                "downloaded": downloaded,
-                "total": total,
-                "speed": speed,
-                "eta": eta,
-                "filename": os.path.basename(filename),
-            })
+            self.progress_updated.emit(
+                {
+                    "status": "downloading",
+                    "downloaded": downloaded,
+                    "total": total,
+                    "speed": speed,
+                    "eta": eta,
+                    "filename": os.path.basename(filename),
+                }
+            )
         elif status == "finished":
             filename = d.get("filename", "")
             self.current_filename = filename
-            self.progress_updated.emit({
-                "status": "finished",
-                "filename": os.path.basename(filename),
-            })
+            self.progress_updated.emit(
+                {
+                    "status": "finished",
+                    "filename": os.path.basename(filename),
+                }
+            )
 
 
 class PlaylistFirstVideoAnalyzer(QThread):
@@ -291,13 +295,15 @@ def _build_format_lists(formats: list):
                 desc = f"{height}p{fps_str} ({ext}) [Combined]"
             else:
                 desc = f"{height}p{fps_str} ({ext})"
-            video_formats.append({
-                "id": fid,
-                "ext": ext,
-                "height": height,
-                "is_combined": is_combined,
-                "desc": desc,
-            })
+            video_formats.append(
+                {
+                    "id": fid,
+                    "ext": ext,
+                    "height": height,
+                    "is_combined": is_combined,
+                    "desc": desc,
+                }
+            )
         elif acodec != "none":
             abr = f.get("abr") or f.get("tbr") or 0
             desc = f"{int(abr)}kbps ({ext})" if abr > 0 else f"Audio ({ext})"

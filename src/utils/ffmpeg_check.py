@@ -3,13 +3,13 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional, Tuple
+
 from .logger import get_logger
 
 logger = get_logger("ffmpeg_check")
 
 
-def find_ffmpeg(custom_path: Optional[str] = None) -> Tuple[Optional[str], Optional[str]]:
+def find_ffmpeg(custom_path: str | None = None) -> tuple[str | None, str | None]:
     """
     Find ffmpeg and ffprobe executables.
     1. Checks custom_path (directory or direct executable).
@@ -20,8 +20,8 @@ def find_ffmpeg(custom_path: Optional[str] = None) -> Tuple[Optional[str], Optio
     ffmpeg_exe_name = "ffmpeg.exe" if os.name == "nt" else "ffmpeg"
     ffprobe_exe_name = "ffprobe.exe" if os.name == "nt" else "ffprobe"
 
-    ffmpeg_found: Optional[str] = None
-    ffprobe_found: Optional[str] = None
+    ffmpeg_found: str | None = None
+    ffprobe_found: str | None = None
 
     if custom_path:
         cp = Path(custom_path)
@@ -85,7 +85,7 @@ def find_ffmpeg(custom_path: Optional[str] = None) -> Tuple[Optional[str], Optio
     return ffmpeg_found, ffprobe_found
 
 
-def get_ffmpeg_version(ffmpeg_path: str) -> Optional[str]:
+def get_ffmpeg_version(ffmpeg_path: str) -> str | None:
     """Runs ffmpeg -version and extracts the version string."""
     if not ffmpeg_path or not os.path.exists(ffmpeg_path):
         return None
@@ -98,8 +98,7 @@ def get_ffmpeg_version(ffmpeg_path: str) -> Optional[str]:
 
         result = subprocess.run(
             [ffmpeg_path, "-version"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
             startupinfo=startupinfo,
             check=True,

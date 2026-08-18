@@ -1,23 +1,33 @@
 import os
 import sys
+
 from PySide6.QtCore import QEvent, Qt, Slot
 from PySide6.QtGui import QAction, QIcon, QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
-    QStatusBar, QSystemTrayIcon, QTabWidget, QVBoxLayout, QWidget, QMenu
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMenu,
+    QStatusBar,
+    QSystemTrayIcon,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
 )
+
+from ..config import config_manager
+from ..constants import APP_NAME, APP_VERSION, get_asset_path
+from ..download_manager import download_manager
+from ..utils.ffmpeg_check import find_ffmpeg
+from ..utils.ffmpeg_downloader import FfmpegDownloadWorker, get_managed_ffmpeg_bin
+from ..utils.logger import get_logger
+from ..utils.network_monitor import NetworkMonitor
 from .downloader_tab import DownloaderTab
 from .library_tab import LibraryTab
 from .queue_tab import QueueTab
 from .settings_tab import SettingsTab, YtdlUpdateWorker
 from .themes import get_stylesheet
-from ..config import config_manager
-from ..constants import APP_NAME, APP_VERSION, get_asset_path
-from ..download_manager import download_manager
-from ..utils.logger import get_logger
-from ..utils.network_monitor import NetworkMonitor
-from ..utils.ffmpeg_check import find_ffmpeg
-from ..utils.ffmpeg_downloader import FfmpegDownloadWorker, get_managed_ffmpeg_bin
 
 logger = get_logger("main_window")
 
@@ -137,7 +147,9 @@ class MainWindow(QMainWindow):
         # 3. Status Bar
         self.setStatusBar(QStatusBar(self))
         self.statusBar().showMessage(f"Welcome to {APP_NAME} v{APP_VERSION}")
-        self.statusBar().setStyleSheet("color: #71717a; font-size: 11px; background-color: rgb(18, 18, 20); border-top: 1px solid rgb(44, 44, 53);")
+        self.statusBar().setStyleSheet(
+            "color: #71717a; font-size: 11px; background-color: rgb(18, 18, 20); border-top: 1px solid rgb(44, 44, 53);"
+        )
 
     def _init_shortcuts(self):
         """Set up global keyboard shortcuts."""
@@ -151,7 +163,11 @@ class MainWindow(QMainWindow):
     def _init_system_tray(self):
         """Set up system tray icon and menu."""
         logo_path = get_asset_path("logo.jpeg")
-        if not logo_path or not os.path.exists(logo_path) or not QSystemTrayIcon.isSystemTrayAvailable():
+        if (
+            not logo_path
+            or not os.path.exists(logo_path)
+            or not QSystemTrayIcon.isSystemTrayAvailable()
+        ):
             self.tray_icon = None
             return
 
@@ -194,7 +210,11 @@ class MainWindow(QMainWindow):
 
     @Slot(str, dict)
     def _on_task_updated(self, task_id: str, data: dict):
-        if data.get("status") == "Completed" and self.tray_icon and config_manager.get("show_notifications", True):
+        if (
+            data.get("status") == "Completed"
+            and self.tray_icon
+            and config_manager.get("show_notifications", True)
+        ):
             task = download_manager.tasks.get(task_id, {})
             title = task.get("title", "Download")
             self.tray_icon.showMessage(
@@ -292,15 +312,16 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Network disconnected! Active downloads paused.")
 
     def changeEvent(self, event: QEvent):
-        if event.type() == QEvent.Type.WindowStateChange:
-            if self.isMinimized() and config_manager.get("minimize_to_tray", True) and self.tray_icon:
-                self.hide()
-                self.tray_icon.showMessage(
-                    APP_NAME,
-                    "App minimized to system tray.",
-                    QSystemTrayIcon.Information,
-                    1500,
-                )
+        if event.type() == QEvent.Type.WindowStateChange and (
+            self.isMinimized() and config_manager.get("minimize_to_tray", True) and self.tray_icon
+        ):
+            self.hide()
+            self.tray_icon.showMessage(
+                APP_NAME,
+                "App minimized to system tray.",
+                QSystemTrayIcon.Information,
+                1500,
+            )
         super().changeEvent(event)
 
     def closeEvent(self, event):

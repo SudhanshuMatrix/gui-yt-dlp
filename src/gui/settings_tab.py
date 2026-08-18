@@ -1,17 +1,32 @@
 import os
 import subprocess
 import sys
-from PySide6.QtCore import Qt, Signal, Slot, QThread
+
+from PySide6.QtCore import Qt, QThread, Signal, Slot
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QFileDialog, QFormLayout, QFrame, QGroupBox,
-    QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QScrollArea,
-    QSpinBox, QVBoxLayout, QWidget, QProgressBar
+    QCheckBox,
+    QComboBox,
+    QFileDialog,
+    QFormLayout,
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QScrollArea,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
 )
+
 from ..config import config_manager
 from ..gui.themes import THEMES
 from ..utils.ffmpeg_check import find_ffmpeg, get_ffmpeg_version
-from ..utils.logger import get_logger
 from ..utils.ffmpeg_downloader import FfmpegDownloadWorker, get_managed_ffmpeg_bin
+from ..utils.logger import get_logger
 
 logger = get_logger("settings_tab")
 
@@ -33,17 +48,19 @@ class YtdlUpdateWorker(QThread):
 
             result = subprocess.run(
                 cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True,
                 startupinfo=startupinfo,
             )
 
             if result.returncode == 0:
                 ver_check = subprocess.run(
-                    [sys.executable, "-c", "import yt_dlp; print(getattr(yt_dlp, '__version__', 'unknown'))"],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    [
+                        sys.executable,
+                        "-c",
+                        "import yt_dlp; print(getattr(yt_dlp, '__version__', 'unknown'))",
+                    ],
+                    capture_output=True,
                     text=True,
                     startupinfo=startupinfo,
                 )
@@ -55,7 +72,7 @@ class YtdlUpdateWorker(QThread):
                 self.update_finished.emit(False, f"Update failed: {result.stderr or result.stdout}")
         except Exception as e:
             logger.error(f"Error during yt-dlp update: {e}")
-            self.update_finished.emit(False, f"Error: {str(e)}")
+            self.update_finished.emit(False, f"Error: {e!s}")
 
 
 class SettingsTab(QWidget):
@@ -185,7 +202,9 @@ class SettingsTab(QWidget):
         speed_layout.setLabelAlignment(Qt.AlignLeft)
         speed_layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
 
-        self.bypass_throttling_check = QCheckBox("Bypass YouTube download speed throttling (impersonate player clients)")
+        self.bypass_throttling_check = QCheckBox(
+            "Bypass YouTube download speed throttling (impersonate player clients)"
+        )
         self.bypass_throttling_check.setChecked(config_manager.get("bypass_throttling", True))
         self.bypass_throttling_check.stateChanged.connect(self._save_bypass_throttling)
         speed_layout.addRow(self.bypass_throttling_check)
@@ -245,20 +264,24 @@ class SettingsTab(QWidget):
 
     def _check_ffmpeg(self):
         custom_ffmpeg = config_manager.get("ffmpeg_path")
-        ff_path, fp_path = find_ffmpeg(custom_ffmpeg)
+        ff_path, _fp_path = find_ffmpeg(custom_ffmpeg)
         if ff_path:
             version = get_ffmpeg_version(ff_path)
             ver_str = f"detected version {version}" if version else "detected"
             self.ffmpeg_ver_label.setText(f"FFmpeg Status: Available ({ver_str}) at {ff_path}")
             self.ffmpeg_ver_label.setStyleSheet("color: #10b981; font-size: 11px;")
         else:
-            self.ffmpeg_ver_label.setText("FFmpeg Status: Not Found! Audio conversion & merging will fail.")
+            self.ffmpeg_ver_label.setText(
+                "FFmpeg Status: Not Found! Audio conversion & merging will fail."
+            )
             self.ffmpeg_ver_label.setStyleSheet("color: #ef4444; font-size: 11px;")
 
     @Slot()
     def _browse_download_folder(self):
         current_dir = self.download_path_input.text() or os.path.expanduser("~/Downloads")
-        folder = QFileDialog.getExistingDirectory(self, "Select Default Download Folder", current_dir)
+        folder = QFileDialog.getExistingDirectory(
+            self, "Select Default Download Folder", current_dir
+        )
         if folder:
             self.download_path_input.setText(folder)
 
@@ -275,7 +298,9 @@ class SettingsTab(QWidget):
         if file_path:
             self.ffmpeg_path_input.setText(file_path)
         else:
-            folder = QFileDialog.getExistingDirectory(self, "Or Select FFmpeg Binaries Directory", current)
+            folder = QFileDialog.getExistingDirectory(
+                self, "Or Select FFmpeg Binaries Directory", current
+            )
             if folder:
                 self.ffmpeg_path_input.setText(folder)
 

@@ -1,4 +1,5 @@
 import os
+
 from src.constants import APP_NAME, APP_VERSION, DEFAULT_SETTINGS, get_asset_path
 
 

@@ -1,21 +1,32 @@
-from typing import Any, Dict, List, Optional, Tuple
-from PySide6.QtCore import Qt
+from typing import Any
+
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-    QFrame, QComboBox, QPushButton
+    QComboBox,
+    QDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
 )
-from ..themes import get_stylesheet
+
 
 class SingleVideoFormatSelectionDialog(QDialog):
-    def __init__(self, title: str, video_formats: List[Dict[str, Any]], audio_formats: List[Dict[str, Any]], parent=None):
+    def __init__(
+        self,
+        title: str,
+        video_formats: list[dict[str, Any]],
+        audio_formats: list[dict[str, Any]],
+        parent=None,
+    ):
         super().__init__(parent)
         self.setWindowTitle("Select Video/Audio Format")
         self.setMinimumSize(450, 220)
         self.resize(500, 250)
-        
+
         self.video_fmt_id = ""
         self.audio_fmt_id = ""
-        
+
         self._build_ui(title, video_formats, audio_formats)
 
     def _build_ui(self, title: str, video_formats: list, audio_formats: list):
@@ -82,5 +93,5 @@ class SingleVideoFormatSelectionDialog(QDialog):
         self.audio_fmt_id = self.audio_combo.currentData() or "bestaudio"
         self.accept()
 
-    def get_selected_formats(self) -> Tuple[str, str]:
+    def get_selected_formats(self) -> tuple[str, str]:
         return self.video_fmt_id, self.audio_fmt_id

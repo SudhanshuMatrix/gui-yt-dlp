@@ -1,11 +1,10 @@
 import io
 import os
-import zipfile
+import shutil
 import tarfile
 import tempfile
-import shutil
+import zipfile
 from pathlib import Path
-from typing import Optional, Tuple
 
 from PySide6.QtCore import QThread, Signal
 
@@ -22,15 +21,13 @@ FFMPEG_LINUX_URL = (
     "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/"
     "ffmpeg-master-latest-linux64-gpl.tar.xz"
 )
-FFMPEG_MAC_URL = (
-    "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip"
-)
+FFMPEG_MAC_URL = "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip"
 
 # Destination inside the app's config dir  (~/.config/gui-yt-dlp/ffmpeg)
 APP_FFMPEG_DIR = Path(os.path.expanduser("~/.config/gui-yt-dlp/ffmpeg"))
 
 
-def get_managed_ffmpeg_bin() -> Optional[Path]:
+def get_managed_ffmpeg_bin() -> Path | None:
     """Return the *bin* directory of an already-managed FFmpeg installation, or None."""
     if not APP_FFMPEG_DIR.exists():
         return None
@@ -47,8 +44,9 @@ class FfmpegDownloadWorker(QThread):
     Downloads and extracts FFmpeg binaries into the app's config directory.
     Emits progress_updated(int percent, str message) and finished signals.
     """
-    progress_updated = Signal(int, str)   # percent (0-100), status message
-    download_finished = Signal(bool, str) # success, message / error
+
+    progress_updated = Signal(int, str)  # percent (0-100), status message
+    download_finished = Signal(bool, str)  # success, message / error
 
     def run(self):
         try:
@@ -84,8 +82,7 @@ class FfmpegDownloadWorker(QThread):
                         mb = downloaded / (1024 * 1024)
                         total_mb = total_size / (1024 * 1024)
                         self.progress_updated.emit(
-                            percent,
-                            f"Downloading… {mb:.1f} / {total_mb:.1f} MB"
+                            percent, f"Downloading… {mb:.1f} / {total_mb:.1f} MB"
                         )
 
             self.progress_updated.emit(87, "Extracting archive…")
@@ -99,7 +96,7 @@ class FfmpegDownloadWorker(QThread):
             if url.endswith(".zip"):
                 with zipfile.ZipFile(io.BytesIO(data)) as zf:
                     zf.extractall(APP_FFMPEG_DIR)
-            elif url.endswith(".tar.xz") or url.endswith(".tar.gz"):
+            elif url.endswith((".tar.xz", ".tar.gz")):
                 with tempfile.NamedTemporaryFile(suffix=".tar.xz", delete=False) as tmp:
                     tmp.write(data)
                     tmp_path = tmp.name
@@ -114,15 +111,12 @@ class FfmpegDownloadWorker(QThread):
                 self.download_finished.emit(
                     False,
                     "Extraction succeeded but ffmpeg executable was not found. "
-                    "Please set the FFmpeg path manually in Settings."
+                    "Please set the FFmpeg path manually in Settings.",
                 )
                 return
 
             self.progress_updated.emit(100, "FFmpeg installed successfully!")
-            self.download_finished.emit(
-                True,
-                f"FFmpeg downloaded and installed to:\n{bin_dir}"
-            )
+            self.download_finished.emit(True, f"FFmpeg downloaded and installed to:\n{bin_dir}")
             logger.info(f"FFmpeg installed at: {bin_dir}")
 
         except Exception as e:

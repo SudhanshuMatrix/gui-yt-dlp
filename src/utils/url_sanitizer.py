@@ -1,9 +1,8 @@
 import re
-from typing import Optional
 from urllib.parse import urlparse
 
 
-def is_valid_url(url: Optional[str]) -> bool:
+def is_valid_url(url: str | None) -> bool:
     """Check if the provided string is a valid HTTP/HTTPS URL."""
     if not url or not isinstance(url, str):
         return False
@@ -16,7 +15,7 @@ def is_valid_url(url: Optional[str]) -> bool:
         return False
 
 
-def sanitize_url(url: Optional[str]) -> str:
+def sanitize_url(url: str | None) -> str:
     """Sanitize URL string by removing leading/trailing whitespace and control characters."""
     if not url or not isinstance(url, str):
         return ""

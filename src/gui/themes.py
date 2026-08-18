@@ -1,7 +1,5 @@
-from typing import Dict, Any
-
 # Define color palettes for themes
-THEMES: Dict[str, Dict[str, str]] = {
+THEMES: dict[str, dict[str, str]] = {
     "Midnight Obsidian": {
         "bg_main": "#121214",
         "bg_card": "#1a1a1e",
@@ -12,12 +10,12 @@ THEMES: Dict[str, Dict[str, str]] = {
         "text_primary": "#f4f4f5",
         "text_secondary": "#a1a1aa",
         "text_muted": "#71717a",
-        "accent": "#8b5cf6",        # Purple
+        "accent": "#8b5cf6",  # Purple
         "accent_hover": "#7c3aed",
         "accent_gradient": "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #8b5cf6, stop:1 #6d28d9)",
-        "success": "#10b981",       # Emerald Green
-        "danger": "#ef4444",        # Red
-        "warning": "#f59e0b"        # Amber
+        "success": "#10b981",  # Emerald Green
+        "danger": "#ef4444",  # Red
+        "warning": "#f59e0b",  # Amber
     },
     "Electric Indigo": {
         "bg_main": "#0b0f19",
@@ -29,12 +27,12 @@ THEMES: Dict[str, Dict[str, str]] = {
         "text_primary": "#f9fafb",
         "text_secondary": "#9ca3af",
         "text_muted": "#6b7280",
-        "accent": "#3b82f6",        # Blue
+        "accent": "#3b82f6",  # Blue
         "accent_hover": "#2563eb",
         "accent_gradient": "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #3b82f6, stop:1 #1d4ed8)",
         "success": "#34d399",
         "danger": "#f87171",
-        "warning": "#fbbf24"
+        "warning": "#fbbf24",
     },
     "Emerald Forest": {
         "bg_main": "#0c1311",
@@ -46,12 +44,12 @@ THEMES: Dict[str, Dict[str, str]] = {
         "text_primary": "#f0fdf4",
         "text_secondary": "#a7f3d0",
         "text_muted": "#6ee7b7",
-        "accent": "#059669",        # Forest Accent
+        "accent": "#059669",  # Forest Accent
         "accent_hover": "#047857",
         "accent_gradient": "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #059669, stop:1 #064e3b)",
         "success": "#10b981",
         "danger": "#ef4444",
-        "warning": "#f59e0b"
+        "warning": "#f59e0b",
     },
     "Cyberpunk Rust": {
         "bg_main": "#181414",
@@ -63,16 +61,17 @@ THEMES: Dict[str, Dict[str, str]] = {
         "text_primary": "#fafaf9",
         "text_secondary": "#d6d3d1",
         "text_muted": "#78716c",
-        "accent": "#ea580c",        # Orange
+        "accent": "#ea580c",  # Orange
         "accent_hover": "#c2410c",
         "accent_gradient": "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #ea580c, stop:1 #ea580c)",
         "success": "#10b981",
         "danger": "#ef4444",
-        "warning": "#f59e0b"
-    }
+        "warning": "#f59e0b",
+    },
 }
 
 import os
+
 
 def get_checkmark_svg_path() -> str:
     config_dir = os.path.expanduser("~/.config/gui-yt-dlp")
@@ -83,20 +82,21 @@ def get_checkmark_svg_path() -> str:
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="12px" height="12px">'
             '<path d="M0 0h24v24H0V0z" fill="none"/>'
             '<path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>'
-            '</svg>'
+            "</svg>"
         )
         try:
             with open(svg_path, "w", encoding="utf-8") as f:
                 f.write(svg_content)
         except Exception:
             pass
-    return svg_path.replace(os.sep, '/')
+    return svg_path.replace(os.sep, "/")
+
 
 def get_stylesheet(theme_name: str) -> str:
     """Generate and return QSS stylesheet for the given theme name."""
     palette = THEMES.get(theme_name, THEMES["Midnight Obsidian"])
     check_svg_path = get_checkmark_svg_path()
-    
+
     qss = f"""
     /* Main Window & Base Widget Styles */
     QMainWindow {{
@@ -416,5 +416,5 @@ def get_stylesheet(theme_name: str) -> str:
         height: 1px;
     }}
     """
-    
+
     return qss

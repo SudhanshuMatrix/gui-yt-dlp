@@ -59,6 +59,18 @@ target-version = ['py312']
 line-length = 100
 target-version = "py312"
 
+[tool.ruff.lint]
+ignore = ["BLE001", "TRY002", "S110", "TRY003", "PLW1510"]
+
 [tool.isort]
 profile = "black"
 line_length = 100
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "src.gui.*"
+ignore_errors = true
+
+

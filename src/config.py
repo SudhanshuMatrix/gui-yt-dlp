@@ -2,7 +2,8 @@ import json
 import os
 import threading
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
+
 from .constants import DEFAULT_SETTINGS
 from .utils.logger import get_logger
 
@@ -13,9 +14,9 @@ class AppConfig:
     def __init__(self):
         self.config_dir: Path = Path.home() / ".config" / "gui-yt-dlp"
         self.config_file: Path = self.config_dir / "settings.json"
-        self.settings: Dict[str, Any] = DEFAULT_SETTINGS.copy()
+        self.settings: dict[str, Any] = DEFAULT_SETTINGS.copy()
         self._dirty: bool = False
-        self._save_timer: Optional[threading.Timer] = None
+        self._save_timer: threading.Timer | None = None
         self._lock = threading.Lock()
         self.load()
 
