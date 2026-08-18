@@ -93,8 +93,8 @@ def get_ffmpeg_version(ffmpeg_path: str) -> str | None:
     try:
         startupinfo = None
         if os.name == "nt":
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo = subprocess.STARTUPINFO()  # type: ignore[attr-defined]
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # type: ignore[attr-defined]
 
         result = subprocess.run(
             [ffmpeg_path, "-version"],

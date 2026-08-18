@@ -18,20 +18,28 @@ def qapp():
 
 
 def test_main_window_instantiation(qapp):
+    from unittest.mock import patch
+
     from src.gui.main_window import MainWindow
 
-    window = MainWindow()
-    assert window is not None
-    assert window.windowTitle().startswith("gui-yt-dlp")
-    window.close()
+    with (
+        patch.object(MainWindow, "_trigger_silent_update"),
+        patch.object(MainWindow, "_check_and_download_ffmpeg"),
+    ):
+        window = MainWindow()
+        assert window is not None
+        assert window.windowTitle().startswith("gui-yt-dlp")
+        window.close()
 
 
 def test_downloader_tab_options_building(qapp):
-    from src.config import config_manager
-    from src.gui.main_window import MainWindow
+    from PySide6.QtWidgets import QWidget
 
-    window = MainWindow()
-    tab = window.downloader_tab
+    from src.config import config_manager
+    from src.gui.downloader_tab import DownloaderTab
+
+    dummy_main = QWidget()
+    tab = DownloaderTab(dummy_main)
 
     # Enable bypass throttling
     config_manager.set("bypass_throttling", True)
@@ -61,5 +69,3 @@ def test_downloader_tab_options_building(qapp):
         p.get("key") == "FFmpegExtractAudio" and p.get("preferredcodec") == "mp3"
         for p in opts.get("postprocessors", [])
     )
-
-    window.close()
