@@ -45,7 +45,7 @@ jobs:
           mv dist/gui-yt-dlp dist/gui-yt-dlp-linux
 
       - name: Upload Linux Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-artifacts
           path: |
@@ -81,7 +81,7 @@ jobs:
           mv dist/gui-yt-dlp.exe dist/gui-yt-dlp-windows.exe
 
       - name: Upload Windows Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-artifacts
           path: dist/gui-yt-dlp-windows.exe
@@ -114,7 +114,7 @@ jobs:
           mv dist/gui-yt-dlp dist/gui-yt-dlp-macos
 
       - name: Upload macOS Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-artifacts
           path: dist/gui-yt-dlp-macos
