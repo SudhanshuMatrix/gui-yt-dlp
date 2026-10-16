@@ -10,6 +10,9 @@ a = Analysis(
     hiddenimports=[
         'yt_dlp',
         'PySide6',
+        'qfluentwidgets',
+        'qframelesswindow',
+        'darkdetect',
         'requests',
         'urllib3',
         'idna',

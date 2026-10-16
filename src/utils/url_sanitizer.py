@@ -20,7 +20,7 @@ def sanitize_url(url: str | None) -> str:
     if not url or not isinstance(url, str):
         return ""
 
-    cleaned = url.strip()
+    cleaned = url.strip().strip("'\"<>")
     # Strip dangerous shell control characters / newlines
     cleaned = re.sub(r"[\r\n\t]", "", cleaned)
-    return cleaned
+    return cleaned.strip()

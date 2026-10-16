@@ -1,17 +1,10 @@
 from typing import Any
 
-from PySide6.QtWidgets import (
-    QComboBox,
-    QDialog,
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QVBoxLayout,
-)
+from PySide6.QtWidgets import QHBoxLayout
+from qfluentwidgets import BodyLabel, ComboBox, MessageBoxBase, SubtitleLabel
 
 
-class SingleVideoFormatSelectionDialog(QDialog):
+class SingleVideoFormatSelectionDialog(MessageBoxBase):
     def __init__(
         self,
         title: str,
@@ -20,73 +13,50 @@ class SingleVideoFormatSelectionDialog(QDialog):
         parent=None,
     ):
         super().__init__(parent)
-        self.setWindowTitle("Select Video/Audio Format")
-        self.setMinimumSize(450, 220)
-        self.resize(500, 250)
-
         self.video_fmt_id = ""
         self.audio_fmt_id = ""
 
         self._build_ui(title, video_formats, audio_formats)
 
+        self.widget.setMinimumWidth(460)
+        self.yesButton.setText("Apply and Queue")
+
     def _build_ui(self, title: str, video_formats: list, audio_formats: list):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(12)
+        header = SubtitleLabel("Format Unavailable")
+        self.viewLayout.addWidget(header)
 
-        # Title label
-        title_label = QLabel(f"<b>Format Unavailable for:</b><br>{title}")
-        title_label.setWordWrap(True)
-        title_label.setStyleSheet("color: #e4e4e7; font-size: 13px;")
-        layout.addWidget(title_label)
+        subtitle = BodyLabel(f"for: {title}")
+        subtitle.setWordWrap(True)
+        self.viewLayout.addWidget(subtitle)
 
-        # Container card
-        card = QFrame()
-        card.setObjectName("cardFrame")
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(12, 12, 12, 12)
-        card_layout.setSpacing(10)
+        self.viewLayout.addSpacing(6)
 
         # Video format row
         vid_layout = QHBoxLayout()
-        vid_layout.addWidget(QLabel("Video Format:"))
-        self.video_combo = QComboBox()
+        vid_layout.addWidget(BodyLabel("Video Format:"))
+        self.video_combo = ComboBox()
         if video_formats:
             for f in video_formats:
-                self.video_combo.addItem(f["desc"], f["id"])
+                self.video_combo.addItem(f["desc"], userData=f["id"])
         else:
-            self.video_combo.addItem("Best Available (auto)", "bestvideo")
+            self.video_combo.addItem("Best Available (auto)", userData="bestvideo")
         vid_layout.addWidget(self.video_combo, 1)
-        card_layout.addLayout(vid_layout)
+        self.viewLayout.addLayout(vid_layout)
 
         # Audio format row
         aud_layout = QHBoxLayout()
-        aud_layout.addWidget(QLabel("Audio Format:"))
-        self.audio_combo = QComboBox()
+        aud_layout.addWidget(BodyLabel("Audio Format:"))
+        self.audio_combo = ComboBox()
         if audio_formats:
             for f in audio_formats:
-                self.audio_combo.addItem(f["desc"], f["id"])
+                self.audio_combo.addItem(f["desc"], userData=f["id"])
         else:
-            self.audio_combo.addItem("Best Available (auto)", "bestaudio")
+            self.audio_combo.addItem("Best Available (auto)", userData="bestaudio")
         aud_layout.addWidget(self.audio_combo, 1)
-        card_layout.addLayout(aud_layout)
+        self.viewLayout.addLayout(aud_layout)
 
-        layout.addWidget(card)
-
-        # Action Buttons
-        btn_layout = QHBoxLayout()
-        btn_layout.addStretch()
-
-        cancel_btn = QPushButton("Cancel")
-        cancel_btn.clicked.connect(self.reject)
-        btn_layout.addWidget(cancel_btn)
-
-        ok_btn = QPushButton("Apply and Queue")
-        ok_btn.setObjectName("primaryButton")
-        ok_btn.clicked.connect(self._on_confirm)
-        btn_layout.addWidget(ok_btn)
-
-        layout.addLayout(btn_layout)
+        self.yesButton.clicked.disconnect()
+        self.yesButton.clicked.connect(self._on_confirm)
 
     def _on_confirm(self):
         self.video_fmt_id = self.video_combo.currentData() or "bestvideo"

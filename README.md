@@ -1,6 +1,6 @@
 # yt-dlp Flow: Modern Python & PySide6 Desktop Downloader
 
-A premium, modern dark-themed desktop frontend for `yt-dlp` built using Python 3.12+ and PySide6 (Qt6). This app separates GUI rendering from download tasks using worker threads (`QThread`), ensuring that the UI remains highly responsive, even when performing concurrent downloads or post-processing (e.g., audio extraction with FFmpeg).
+A premium, modern desktop frontend for `yt-dlp` built using Python 3.12+, PySide6 (Qt6), and [PySide6-Fluent-Widgets](https://qfluentwidgets.com/) for a native Windows 11 Fluent Design look — a frameless window, left sidebar navigation, Mica backdrop, and real card elevation instead of hand-rolled stylesheets. This app separates GUI rendering from download tasks using worker threads (`QThread`), ensuring that the UI remains highly responsive, even when performing concurrent downloads or post-processing (e.g., audio extraction with FFmpeg).
 
 ---
 
@@ -31,37 +31,50 @@ gui-yt-dlp/
 ├── pyproject.toml              # Build & dependency declarations (PEP 621)
 ├── requirements.txt            # Python pip dependencies
 ├── README.md                   # Installation, build, & usage instructions
+├── changesmade.md              # Rolling changelog of fixes & features
 ├── Makefile                    # Automation commands (run, build, deb, clean, etc.)
 ├── gui-yt-dlp.spec             # PyInstaller spec build file
 ├── src/
 │   ├── __init__.py
-│   ├── main.py                 # Application entry point
-│   ├── config.py               # JSON settings manager (~/.config/gui-yt-dlp/settings.json)
-│   ├── download_manager.py     # Asynchronous task scheduling and worker control
-│   ├── yt_dlp_worker.py        # QThread workers for URL analysis & downloads
+│   ├── main.py                  # Application entry point
+│   ├── config.py                # JSON settings manager (~/.config/gui-yt-dlp/settings.json)
+│   ├── constants.py             # Default settings & shared constant values
+│   ├── download_manager.py      # Asynchronous task scheduling, queue persistence & worker control
+│   ├── yt_dlp_worker.py         # QThread workers for URL analysis, format pre-checks & downloads
 │   ├── gui/
 │   │   ├── __init__.py
-│   │   ├── main_window.py      # Core window with Header and tab selectors
-│   │   ├── downloader_tab.py   # URL input, meta analysis, formats selector
-│   │   ├── queue_tab.py        # Table list of tasks with custom controls & live console log
-│   │   ├── settings_tab.py     # Directories paths, theme selection, & live updater
-│   │   ├── themes.py           # Custom QSS stylesheets for dark mode themes
+│   │   ├── main_window.py       # Core window with Header, tab selectors & silent FFmpeg bootstrap
+│   │   ├── downloader_tab.py    # URL input, meta analysis, formats selector & active-download progress
+│   │   ├── queue_tab.py         # Table list of tasks with custom controls & live console log
+│   │   ├── library_tab.py       # Persistent saved video/playlist bookmarks
+│   │   ├── settings_tab.py      # Directories, personalization, speed/network tuning & FFmpeg management
+│   │   ├── themes.py            # Applies the saved dark-mode/accent-color preference via qfluentwidgets
+│   │   ├── widgets/
+│   │   │   ├── __init__.py
+│   │   │   ├── format_selection_dialog.py    # Manual format picker for "Format Unavailable" tasks
+│   │   │   └── playlist_fallback_dialog.py   # Per-video format resolution for incompatible playlist items
 │   │   └── assets/
 │   │       ├── logo.jpeg       # Application logo preview
 │   │       ├── logo.png        # High-res logo source image
 │   │       └── logo.ico        # Windows executable branding icon
 │   └── utils/
 │       ├── __init__.py
-│       ├── ffmpeg_check.py     # FFmpeg & FFprobe location and version detection
-│       └── logger.py           # Application console and file logger
+│       ├── ffmpeg_check.py       # FFmpeg & FFprobe location and version detection
+│       ├── ffmpeg_downloader.py  # Automatic FFmpeg download/install when missing
+│       ├── library_manager.py    # Persistent library bookmarks (~/.config/gui-yt-dlp/library.json)
+│       ├── network_monitor.py    # Online/offline detection to auto-pause/resume the queue
+│       ├── speed_test.py         # Background download speed test worker
+│       ├── url_sanitizer.py      # URL cleanup/validation (quotes, whitespace, angle brackets)
+│       └── logger.py             # Application console and file logger
 └── tests/                      # PyTest automated test suite
-    ├── test_config.py          # Configuration unit tests
-    ├── test_constants.py       # Constants unit tests
-    ├── test_download_manager.py # Task queue and downloads unit tests
-    ├── test_ffmpeg_check.py    # FFmpeg checks unit tests
-    ├── test_library_manager.py # Library bookmarks unit tests
-    ├── test_main.py            # GUI elements and options tests
-    └── test_url_sanitizer.py   # Sanitizer unit tests
+    ├── test_config.py           # Configuration unit tests
+    ├── test_constants.py        # Constants unit tests
+    ├── test_download_manager.py # Task queue, progress tracking & downloads unit tests
+    ├── test_ffmpeg_check.py     # FFmpeg checks unit tests
+    ├── test_library_manager.py  # Library bookmarks unit tests
+    ├── test_main.py             # GUI elements and options tests
+    ├── test_url_sanitizer.py    # Sanitizer unit tests
+    └── test_yt_dlp_worker.py    # Combined-stream progress hook unit tests
 
 ```
 
@@ -215,8 +228,9 @@ flatpak run org.flatpak.gui-yt-dlp
 ### <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/lucide/layout-dashboard.svg?color=%23e6edf3"><img src="https://api.iconify.design/lucide/layout-dashboard.svg?color=%2324292f" width="18" height="18" align="absmiddle" alt="dashboard"></picture> 1. Downloader Dashboard
 ![Downloader Dashboard](screenshots/Downloader%20Dashboard.png)
 - **URL Parser**: Paste any video or playlist URL. The dashboard automatically fetches video details and shows a high-quality 16:9 thumbnail preview, title, channel name, and duration.
-- **Download Settings**: Customize the download mode (e.g., *Best Quality*, *Video Only*, *Audio Only MP3*, or *Custom Formats*).
+- **Download Settings**: Customize the download mode (e.g., *Best Quality*, *Video Only*, *Audio Only MP3*, or *Custom Formats*) and the output container (mp4, mkv, webm, mov, avi, flv).
 - **Playlist Controls**: When a playlist is detected, you can specify ranges (e.g., start downloading from item 4) or enter complex indices (e.g. `1,3,5-10`).
+- **Combined Progress Tracking**: For video+audio downloads, the progress bar and size label track the *combined* total across both streams, advancing smoothly from 0% to 100% without resetting when switching from the video stream to the audio stream.
 - **Post-Processing Options**: Toggle automatic embedding of subtitles, video thumbnails, metadata, and specify target folders.
 
 ### <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/lucide/list-todo.svg?color=%23e6edf3"><img src="https://api.iconify.design/lucide/list-todo.svg?color=%2324292f" width="18" height="18" align="absmiddle" alt="queue"></picture> 2. Download Queue
@@ -224,13 +238,14 @@ flatpak run org.flatpak.gui-yt-dlp
 - **Live Progress Grid**: Displays active and queued downloads in a tabular list with live status indicators, thumbnail previews, file size metrics, real-time download speeds, and ETAs.
 - **Worker Controls**: Pause, resume, cancel, or remove tasks on the fly without blocking the UI thread.
 - **Dynamic Format Selector**: If a video lacks the user-requested format, the task transitions to a warning state labeled `Format Unavailable`. Clicking `Select Format` prompts a dialog with alternative streams available for that specific video so you can select and re-queue.
+- **Network-Aware Pausing**: Active downloads automatically pause when your network connection drops and resume automatically once it's restored.
 - **Monospace Console Logs**: An integrated collapsible shell terminal displaying color-coded stdout logs from `yt-dlp` subprocesses for debugging.
 
 ### <picture><source media="(prefers-color-scheme: dark)" srcset="https://api.iconify.design/lucide/settings.svg?color=%23e6edf3"><img src="https://api.iconify.design/lucide/settings.svg?color=%2324292f" width="18" height="18" align="absmiddle" alt="settings"></picture> 3. Settings Dashboard
 ![Settings Dashboard](screenshots/Settings%20Dashboard.png)
 - **Directory Paths**: Specify default download destination directories and configure path shortcuts.
-- **FFmpeg Engine**: Dynamically scans for FFmpeg and FFprobe binary locations on your system, indicating status in green (found) or red (missing).
-- **Concurrency & Themes**: Set concurrent download limits (1-10 files at a time) and select from custom application-wide UI themes (like *Midnight Obsidian*).
+- **FFmpeg Engine**: Dynamically scans for FFmpeg and FFprobe binary locations on your system, indicating status in green (found) or red (missing), with an in-app automatic FFmpeg downloader when it's missing.
+- **Concurrency & Personalization**: Set concurrent download limits (1-10 files at a time), toggle Dark/Light mode, and pick an accent color from the swatch row.
 - **Speed & Network Optimization**: Configure concurrent fragment downloads (parallel download threads per video), custom HTTP chunk sizes, socket connection timeouts, and client player overrides to bypass YouTube's rate limiting and saturate high-speed internet connections.
 - **Component Updates**: Check and upgrade the `yt-dlp` dependency directly in the background.
 
@@ -239,6 +254,5 @@ flatpak run org.flatpak.gui-yt-dlp
 - **Persistent Bookmarks**: Save analyzed videos and playlists to download at a later time. Saved items are serialized persistently inside `~/.config/gui-yt-dlp/library.json`.
 - **Quick Save URL**: Paste a video or playlist URL directly to quick-add it to your library. It auto-fetches uploader details, titles, and thumbnails in the background.
 - **Config & Quick Download**: Load saved items straight back into the downloader layout to select custom formats, or start downloading immediately using default best-quality profiles.
-
 
 

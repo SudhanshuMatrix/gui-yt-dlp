@@ -117,6 +117,8 @@ class DownloadWorker(QThread):
         self._paused = False
         self._cancelled = False
         self.current_filename = ""
+        self._completed_streams: dict[str, int] = {}
+        self._known_combined_total: int = 0
 
         self.ydl_opts["progress_hooks"] = [self._progress_hook]
         self.ydl_opts["logger"] = YtdlLogger(self)
@@ -152,6 +154,8 @@ class DownloadWorker(QThread):
                     "no_warnings": True,
                     "nocheckcertificate": True,
                 }
+                if "ffmpeg_location" in self.ydl_opts:
+                    check_opts["ffmpeg_location"] = self.ydl_opts["ffmpeg_location"]
 
                 with yt_dlp.YoutubeDL(check_opts) as ydl:
                     info = ydl.extract_info(self.url, download=False)
@@ -166,7 +170,7 @@ class DownloadWorker(QThread):
                 formats = info.get("formats", [])
                 fmt_ids = {f.get("format_id", "") for f in formats}
 
-                video_ok = video_fmt in fmt_ids
+                video_ok = (not video_fmt) or (video_fmt in fmt_ids)
                 audio_ok = (not audio_fmt) or (audio_fmt in fmt_ids)
 
                 if not (video_ok and audio_ok):
@@ -178,6 +182,41 @@ class DownloadWorker(QThread):
                 self.log_received.emit(
                     "[App] Selected format is available. Proceeding with download..."
                 )
+            else:
+                # Pre-extract format metadata to obtain exact total size for multi-stream downloads
+                try:
+                    extract_opts = {
+                        "skip_download": True,
+                        "quiet": True,
+                        "no_warnings": True,
+                        "nocheckcertificate": True,
+                    }
+                    if "ffmpeg_location" in self.ydl_opts:
+                        extract_opts["ffmpeg_location"] = self.ydl_opts["ffmpeg_location"]
+                    if "format" in self.ydl_opts:
+                        extract_opts["format"] = self.ydl_opts["format"]
+
+                    with yt_dlp.YoutubeDL(extract_opts) as ydl:
+                        info = ydl.extract_info(self.url, download=False)
+                        if info:
+                            req_fmts = info.get("requested_formats")
+                            if req_fmts and isinstance(req_fmts, list) and len(req_fmts) > 0:
+                                known_sum = 0
+                                all_fmts_have_size = True
+                                for fmt in req_fmts:
+                                    sz = fmt.get("filesize") or fmt.get("filesize_approx") or 0
+                                    if sz > 0:
+                                        known_sum += sz
+                                    else:
+                                        all_fmts_have_size = False
+                                if all_fmts_have_size and known_sum > 0:
+                                    self._known_combined_total = known_sum
+                            else:
+                                single_sz = info.get("filesize") or info.get("filesize_approx") or 0
+                                if single_sz > 0:
+                                    self._known_combined_total = single_sz
+                except Exception as meta_err:
+                    logger.debug(f"Pre-extraction format size check skipped: {meta_err}")
 
             with yt_dlp.YoutubeDL(self.ydl_opts) as ydl:
                 ydl.download([self.url])
@@ -209,18 +248,52 @@ class DownloadWorker(QThread):
 
         status = d.get("status")
         if status == "downloading":
-            total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
-            downloaded = d.get("downloaded_bytes", 0)
-            speed = d.get("speed", 0)
-            eta = d.get("eta", 0)
             filename = d.get("filename", "")
             self.current_filename = filename
+
+            stream_total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+            stream_downloaded = d.get("downloaded_bytes", 0)
+
+            # Check info_dict if _known_combined_total was not set yet
+            if not self._known_combined_total:
+                info_dict = d.get("info_dict") or {}
+                req_fmts = info_dict.get("requested_formats")
+                if req_fmts and isinstance(req_fmts, list) and len(req_fmts) > 0:
+                    known_sum = 0
+                    all_fmts_have_size = True
+                    for fmt in req_fmts:
+                        sz = fmt.get("filesize") or fmt.get("filesize_approx") or 0
+                        if sz > 0:
+                            known_sum += sz
+                        else:
+                            all_fmts_have_size = False
+                    if all_fmts_have_size and known_sum > 0:
+                        self._known_combined_total = known_sum
+                else:
+                    single_sz = info_dict.get("filesize") or info_dict.get("filesize_approx") or 0
+                    if single_sz > 0:
+                        self._known_combined_total = single_sz
+
+            # Sum bytes from already finished streams (excluding current stream)
+            completed_bytes = sum(
+                sz for fn, sz in self._completed_streams.items() if fn != filename
+            )
+
+            total_downloaded = completed_bytes + stream_downloaded
+
+            if self._known_combined_total > 0:
+                total_size = max(self._known_combined_total, total_downloaded)
+            else:
+                total_size = max(completed_bytes + stream_total, total_downloaded)
+
+            speed = d.get("speed", 0)
+            eta = d.get("eta", 0)
 
             self.progress_updated.emit(
                 {
                     "status": "downloading",
-                    "downloaded": downloaded,
-                    "total": total,
+                    "downloaded": total_downloaded,
+                    "total": total_size,
                     "speed": speed,
                     "eta": eta,
                     "filename": os.path.basename(filename),
@@ -229,6 +302,10 @@ class DownloadWorker(QThread):
         elif status == "finished":
             filename = d.get("filename", "")
             self.current_filename = filename
+            stream_total = d.get("total_bytes") or d.get("downloaded_bytes") or 0
+            if filename:
+                self._completed_streams[filename] = stream_total
+
             self.progress_updated.emit(
                 {
                     "status": "finished",

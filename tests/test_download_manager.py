@@ -75,3 +75,53 @@ def test_download_manager_temp_paths_and_ffmpeg(tmp_path: Path):
         assert called_opts["paths"]["home"] == str(tmp_path)
         assert "temp" in called_opts["paths"]
         assert task_id in called_opts["paths"]["temp"]
+
+
+def test_format_eta_float():
+    assert DownloadManager._format_eta(12.5) == "00:12"
+    assert DownloadManager._format_eta(3665.8) == "01:01:05"
+    assert DownloadManager._format_eta(None) == "Unknown"
+    assert DownloadManager._format_eta(0) == "Unknown"
+
+
+def test_on_progress_ignores_stream_finished_reset(tmp_path: Path):
+    """A per-stream 'finished' event (video done, audio still pending) must not
+    reset the combined progress/size/speed/eta display back to zero."""
+    from unittest.mock import patch
+
+    dm = DownloadManager()
+    dm.config_dir = tmp_path
+    dm.queue_file = tmp_path / "queue.json"
+    dm.tasks = {}
+
+    ydl_opts = {"outtmpl": {"default": str(tmp_path)}}
+    with patch("src.download_manager.DownloadWorker"):
+        task_id = dm.add_task(
+            url="https://www.youtube.com/watch?v=sample_progress",
+            title="Sample Progress Test",
+            ydl_opts=ydl_opts,
+        )
+
+    # Simulate mid-download progress (video stream, 50% of combined total)
+    dm._on_progress(
+        task_id,
+        {
+            "status": "downloading",
+            "downloaded": 50_000_000,
+            "total": 100_000_000,
+            "speed": 1_000_000,
+            "eta": 50,
+            "filename": "video.f137.mp4",
+        },
+    )
+    assert dm.tasks[task_id]["progress"] == 50.0
+    assert dm.tasks[task_id]["downloaded"] != "0 B"
+
+    # Video stream finishes; worker emits a bare status-only event
+    dm._on_progress(task_id, {"status": "finished", "filename": "video.f137.mp4"})
+
+    # Progress/size/speed must be unaffected by the stream-finished marker
+    assert dm.tasks[task_id]["progress"] == 50.0
+    assert dm.tasks[task_id]["downloaded"] != "0 B"
+    assert dm.tasks[task_id]["total"] != "Unknown"
+

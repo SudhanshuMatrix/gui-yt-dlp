@@ -8,6 +8,8 @@ def test_sanitize_url():
     )
     assert sanitize_url(None) == ""
     assert sanitize_url("http://example.com/test\tfile") == "http://example.com/testfile"
+    assert sanitize_url("\"https://www.youtube.com/watch?v=A95rliroC8Q&t=819s\"") == "https://www.youtube.com/watch?v=A95rliroC8Q&t=819s"
+    assert sanitize_url("'<https://www.youtube.com/watch?v=A95rliroC8Q>'") == "https://www.youtube.com/watch?v=A95rliroC8Q"
 
 
 def test_is_valid_url():

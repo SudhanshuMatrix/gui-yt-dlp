@@ -417,12 +417,18 @@ class DownloadManager(QObject):
         if task_id not in self.tasks:
             return
 
+        # A "finished" event marks a single stream (e.g. video OR audio) completing
+        # mid-download. It carries no downloaded/total/speed/eta data, so it must not
+        # overwrite the combined progress/size/speed/eta display with zeros.
+        if data.get("status") == "finished":
+            return
+
         task = self.tasks[task_id]
         total = data.get("total", 0)
         downloaded = data.get("downloaded", 0)
         progress = 0.0
         if total > 0:
-            progress = (downloaded / total) * 100
+            progress = min(100.0, max(0.0, (downloaded / total) * 100))
 
         downloaded_str = self._format_size(downloaded)
         total_str = self._format_size(total) if total > 0 else "Unknown"
@@ -458,7 +464,28 @@ class DownloadManager(QObject):
             return
         task = self.tasks[task_id]
         task["logs"].append(log_line)
-        self.task_updated.emit(task_id, {"new_log": log_line})
+
+        log_lower = log_line.lower()
+        new_status = None
+        if "[merger]" in log_lower or "merging formats" in log_lower:
+            new_status = "Merging Audio and Video..."
+        elif "[ffmpegextractaudio]" in log_lower or "extracting audio" in log_lower:
+            new_status = "Converting Audio..."
+        elif "[ffmpegembedsubtitle]" in log_lower or "embedding subtitle" in log_lower:
+            new_status = "Embedding Subtitles..."
+        elif "[embedthumbnail]" in log_lower or "embedding thumbnail" in log_lower:
+            new_status = "Embedding Thumbnail..."
+        elif "[ffmpegmetadata]" in log_lower or "adding metadata" in log_lower:
+            new_status = "Processing Metadata..."
+
+        update_payload: dict[str, Any] = {"new_log": log_line}
+        if new_status:
+            task["status"] = new_status
+            task["eta"] = new_status
+            update_payload["status"] = new_status
+            update_payload["eta"] = new_status
+
+        self.task_updated.emit(task_id, update_payload)
 
     def _on_finished(self, task_id: str, filename: str):
         if task_id not in self.tasks:
@@ -599,8 +626,8 @@ class DownloadManager(QObject):
 
         i = math.floor(math.log(size_bytes, 1024))
         p = math.pow(1024, i)
-        s = round(size_bytes / p, 2)
-        return f"{s} {size_name[i]}"
+        s = size_bytes / p
+        return f"{s:.2f} {size_name[i]}"
 
     @staticmethod
     def _format_speed(speed_bytes_sec: float | None) -> str:
@@ -615,10 +642,14 @@ class DownloadManager(QObject):
         return f"{s} {size_name[i]}"
 
     @staticmethod
-    def _format_eta(eta_seconds: int | None) -> str:
+    def _format_eta(eta_seconds: int | float | None) -> str:
         if eta_seconds is None or eta_seconds <= 0:
             return "Unknown"
-        minutes, seconds = divmod(eta_seconds, 60)
+        try:
+            total_sec = int(eta_seconds)
+        except (ValueError, TypeError):
+            return "Unknown"
+        minutes, seconds = divmod(total_sec, 60)
         hours, minutes = divmod(minutes, 60)
         if hours > 0:
             return f"{hours:02d}:{minutes:02d}:{seconds:02d}"

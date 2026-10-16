@@ -5,24 +5,32 @@ from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QFont, QPixmap
 from PySide6.QtWidgets import (
     QAbstractItemView,
-    QDialog,
-    QFrame,
     QHBoxLayout,
     QHeaderView,
-    QLabel,
-    QMessageBox,
-    QProgressBar,
-    QPushButton,
     QSplitter,
-    QTableWidget,
     QTableWidgetItem,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
+from qfluentwidgets import (
+    CaptionLabel,
+    CardWidget,
+    FluentIcon,
+    MessageBox,
+    ProgressBar,
+    PushButton,
+    SearchLineEdit,
+    StrongBodyLabel,
+    TableWidget,
+    TextEdit,
+    ToolButton,
+    TransparentToolButton,
+)
 
+from ..config import config_manager
 from ..download_manager import download_manager
 from ..utils.logger import get_logger
+from ..utils.open_path import open_path
 from .widgets.format_selection_dialog import SingleVideoFormatSelectionDialog
 
 logger = get_logger("queue_tab")
@@ -47,11 +55,12 @@ class QueueTab(QWidget):
 
     def _init_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(12)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(14)
 
         # Splitter to separate Queue Table (top) and Log Console (bottom)
         splitter = QSplitter(Qt.Vertical)
+        splitter.setChildrenCollapsible(False)
 
         # 1. Top Panel: Queue Table & Controls
         top_container = QWidget()
@@ -61,27 +70,39 @@ class QueueTab(QWidget):
 
         # Controls Row
         ctrl_layout = QHBoxLayout()
-        self.pause_all_btn = QPushButton("Pause All")
+        self.pause_all_btn = PushButton(FluentIcon.PAUSE, "Pause All")
         self.pause_all_btn.clicked.connect(self._pause_all)
         ctrl_layout.addWidget(self.pause_all_btn)
 
-        self.resume_all_btn = QPushButton("Resume All")
+        self.resume_all_btn = PushButton(FluentIcon.PLAY, "Resume All")
         self.resume_all_btn.clicked.connect(self._resume_all)
         ctrl_layout.addWidget(self.resume_all_btn)
 
-        self.clear_completed_btn = QPushButton("Clear Completed")
+        self.clear_completed_btn = PushButton(FluentIcon.DELETE, "Clear Completed")
         self.clear_completed_btn.clicked.connect(self._clear_completed)
         ctrl_layout.addWidget(self.clear_completed_btn)
 
         ctrl_layout.addStretch()
+
+        self.search_input = SearchLineEdit()
+        self.search_input.setPlaceholderText("Filter by title or status...")
+        self.search_input.setFixedWidth(260)
+        self.search_input.textChanged.connect(self._apply_filter)
+        self.search_input.searchSignal.connect(self._apply_filter)
+        self.search_input.clearSignal.connect(lambda: self._apply_filter(""))
+        ctrl_layout.addWidget(self.search_input)
+
         top_layout.addLayout(ctrl_layout)
 
         # Queue Table
-        self.table = QTableWidget()
+        self.table = TableWidget()
         self.table.setColumnCount(7)
         self.table.setHorizontalHeaderLabels(
             ["Thumbnail", "Title", "Size", "Progress", "Speed", "ETA", "Actions"]
         )
+        self.table.setBorderVisible(True)
+        self.table.setBorderRadius(8)
+        self.table.setWordWrap(False)
 
         # Set selection behavior
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -100,7 +121,7 @@ class QueueTab(QWidget):
 
         self.table.setColumnWidth(0, 90)  # Thumbnail width
         self.table.setColumnWidth(3, 140)  # Progress width
-        self.table.setColumnWidth(6, 195)  # Actions width
+        self.table.setColumnWidth(6, 230)  # Actions width
         self.table.verticalHeader().setDefaultSectionSize(60)  # Height of rows
         self.table.verticalHeader().setVisible(False)  # Hide vertical row numbers header
 
@@ -108,34 +129,24 @@ class QueueTab(QWidget):
         splitter.addWidget(top_container)
 
         # 2. Bottom Panel: Log Console
-        self.log_container = QFrame()
-        self.log_container.setObjectName("cardFrame")
+        self.log_container = CardWidget()
         log_layout = QVBoxLayout(self.log_container)
-        log_layout.setContentsMargins(12, 12, 12, 12)
+        log_layout.setContentsMargins(16, 16, 16, 16)
         log_layout.setSpacing(8)
 
         log_header_layout = QHBoxLayout()
-        self.log_title_label = QLabel("Download Console Logs (Select an item to view)")
-        self.log_title_label.setObjectName("sectionHeader")
+        self.log_title_label = StrongBodyLabel("Download Console Logs (Select an item to view)")
         log_header_layout.addWidget(self.log_title_label)
 
         log_header_layout.addStretch()
-        self.clear_log_btn = QPushButton("Clear Console")
-        self.clear_log_btn.setMinimumHeight(24)
+        self.clear_log_btn = PushButton(FluentIcon.BROOM, "Clear Console")
         self.clear_log_btn.clicked.connect(self._clear_console)
         log_header_layout.addWidget(self.clear_log_btn)
         log_layout.addLayout(log_header_layout)
 
-        self.console = QTextEdit()
+        self.console = TextEdit()
         self.console.setReadOnly(True)
-        # Apply terminal look via inline styles (or it inherits global styles)
-        self.console.setStyleSheet("""
-            background-color: #0c0a09; 
-            color: #a7f3d0; 
-            border: 1px solid #1c1917; 
-            border-radius: 4px;
-        """)
-        self.console.setFont(QFont("Courier New", 10))
+        self.console.setFont(QFont("Consolas", 9))
         log_layout.addWidget(self.console)
 
         splitter.addWidget(self.log_container)
@@ -166,7 +177,7 @@ class QueueTab(QWidget):
         self.task_row_map[task_id] = row
 
         # Column 0: Thumbnail
-        thumb_label = QLabel()
+        thumb_label = CaptionLabel()
         thumb_label.setAlignment(Qt.AlignCenter)
         thumb_label.setFixedSize(80, 45)
         self._set_thumbnail_on_label(thumb_label, task.get("thumbnail_local_path"))
@@ -187,10 +198,9 @@ class QueueTab(QWidget):
         self.table.setItem(row, 2, size_item)
 
         # Column 3: Progress
-        progress_bar = QProgressBar()
+        progress_bar = ProgressBar()
         progress_bar.setRange(0, 100)
         progress_bar.setValue(0)
-        progress_bar.setFixedHeight(18)
         self.table.setCellWidget(row, 3, progress_bar)
 
         # Column 4: Speed
@@ -209,26 +219,29 @@ class QueueTab(QWidget):
         actions_widget = QWidget()
         actions_layout = QHBoxLayout(actions_widget)
         actions_layout.setContentsMargins(4, 4, 4, 4)
-        actions_layout.setSpacing(6)
+        actions_layout.setSpacing(4)
 
-        pause_btn = QPushButton("Pause")
-        pause_btn.setStyleSheet("padding: 2px 8px; font-size: 11px;")
-        pause_btn.setMinimumHeight(24)
+        pause_btn = ToolButton(FluentIcon.PAUSE)
+        pause_btn.setToolTip("Pause")
         pause_btn.clicked.connect(lambda _, tid=task_id: self._pause_task(tid))
 
-        cancel_btn = QPushButton("Cancel")
-        cancel_btn.setStyleSheet("padding: 2px 8px; font-size: 11px;")
-        cancel_btn.setMinimumHeight(24)
+        cancel_btn = ToolButton(FluentIcon.CANCEL)
+        cancel_btn.setToolTip("Cancel")
         cancel_btn.clicked.connect(lambda _, tid=task_id: self._cancel_task(tid))
 
-        remove_btn = QPushButton("✕")
-        remove_btn.setStyleSheet("padding: 0px; font-weight: bold; font-size: 14px;")
-        remove_btn.setFixedSize(24, 24)
+        remove_btn = TransparentToolButton(FluentIcon.DELETE)
+        remove_btn.setToolTip("Remove")
         remove_btn.clicked.connect(lambda _, tid=task_id: self._remove_task(tid))
+
+        open_folder_btn = TransparentToolButton(FluentIcon.FOLDER)
+        open_folder_btn.setToolTip("Open containing folder")
+        open_folder_btn.clicked.connect(lambda _, tid=task_id: self._open_folder(tid))
 
         actions_layout.addWidget(pause_btn)
         actions_layout.addWidget(cancel_btn)
+        actions_layout.addWidget(open_folder_btn)
         actions_layout.addWidget(remove_btn)
+        actions_layout.addStretch()
         self.table.setCellWidget(row, 6, actions_widget)
 
         # Keep track of widgets for quick updates
@@ -241,7 +254,10 @@ class QueueTab(QWidget):
             "pause_btn": pause_btn,
             "cancel_btn": cancel_btn,
             "remove_btn": remove_btn,
+            "open_folder_btn": open_folder_btn,
         }
+
+        self._apply_filter(self.search_input.text())
 
     @Slot(str, dict)
     def _on_task_updated(self, task_id: str, data: dict):
@@ -278,35 +294,27 @@ class QueueTab(QWidget):
 
             # Update action buttons state
             if status == "Downloading":
-                widgets["pause_btn"].setText("Pause")
+                widgets["pause_btn"].setIcon(FluentIcon.PAUSE)
+                widgets["pause_btn"].setToolTip("Pause")
                 widgets["pause_btn"].setEnabled(True)
                 widgets["cancel_btn"].setEnabled(True)
             elif status == "Paused":
-                widgets["pause_btn"].setText("Resume")
+                widgets["pause_btn"].setIcon(FluentIcon.PLAY)
+                widgets["pause_btn"].setToolTip("Resume")
                 widgets["pause_btn"].setEnabled(True)
                 widgets["cancel_btn"].setEnabled(True)
             elif status == "Format Unavailable":
-                widgets["pause_btn"].setText("Select Format")
+                widgets["pause_btn"].setIcon(FluentIcon.SETTING)
+                widgets["pause_btn"].setToolTip("Select Format")
                 widgets["pause_btn"].setEnabled(True)
                 widgets["cancel_btn"].setEnabled(True)
             elif status in ("Completed", "Failed", "Cancelled"):
-                widgets["pause_btn"].setText("Pause")
+                widgets["pause_btn"].setIcon(FluentIcon.PAUSE)
                 widgets["pause_btn"].setEnabled(False)
                 widgets["cancel_btn"].setEnabled(False)
                 widgets["speed_item"].setText("0 B/s")
                 if status == "Completed":
                     widgets["progress_bar"].setValue(100)
-                    widgets["progress_bar"].setStyleSheet(
-                        "QProgressBar::chunk { background-color: #10b981; }"
-                    )  # success
-                elif status == "Failed":
-                    widgets["progress_bar"].setStyleSheet(
-                        "QProgressBar::chunk { background-color: #ef4444; }"
-                    )  # danger
-                elif status == "Cancelled":
-                    widgets["progress_bar"].setStyleSheet(
-                        "QProgressBar::chunk { background-color: #71717a; }"
-                    )  # muted
 
         # Append new log line to console if this task is currently viewed
         if "new_log" in data and self.active_log_task_id == task_id:
@@ -331,7 +339,30 @@ class QueueTab(QWidget):
 
         self._rebuild_table_mapping()
 
-    def _set_thumbnail_on_label(self, label: QLabel, path: str | None):
+    def _apply_filter(self, text: str = ""):
+        """Hide rows whose title/status don't match the search box text."""
+        text = text.strip().lower()
+        for task_id, row in self.task_row_map.items():
+            if row >= self.table.rowCount():
+                continue
+            if not text:
+                self.table.setRowHidden(row, False)
+                continue
+            task = download_manager.tasks.get(task_id, {})
+            haystack = f"{task.get('title', '')} {task.get('status', '')}".lower()
+            self.table.setRowHidden(row, text not in haystack)
+
+    def _open_folder(self, task_id: str):
+        task = download_manager.tasks.get(task_id)
+        if not task:
+            return
+        download_dir = task.get("ydl_opts", {}).get("_download_dir") or config_manager.get(
+            "download_directory"
+        )
+        if not open_path(download_dir):
+            logger.warning(f"Could not open download folder for task {task_id}: {download_dir}")
+
+    def _set_thumbnail_on_label(self, label: CaptionLabel, path: str | None):
         if path and os.path.exists(path):
             pixmap = QPixmap(path)
             label.setPixmap(
@@ -366,7 +397,7 @@ class QueueTab(QWidget):
         video_formats, audio_formats = _build_format_lists(info.get("formats", []))
 
         dlg = SingleVideoFormatSelectionDialog(task["title"], video_formats, audio_formats, self)
-        if dlg.exec() == QDialog.Accepted:
+        if dlg.exec():
             video_fmt, audio_fmt = dlg.get_selected_formats()
 
             # Update formats in task options
@@ -403,14 +434,10 @@ class QueueTab(QWidget):
             download_manager.process_queue()
 
     def _cancel_task(self, task_id: str):
-        reply = QMessageBox.question(
-            self,
-            "Cancel Download",
-            "Are you sure you want to cancel this download?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+        box = MessageBox(
+            "Cancel Download", "Are you sure you want to cancel this download?", self
         )
-        if reply == QMessageBox.Yes:
+        if box.exec():
             download_manager.cancel_task(task_id)
 
     def _remove_task(self, task_id: str):
@@ -420,14 +447,12 @@ class QueueTab(QWidget):
 
         # If download is active, confirm first
         if task["status"] == "Downloading":
-            reply = QMessageBox.question(
-                self,
+            box = MessageBox(
                 "Remove Task",
                 "This download is in progress. Are you sure you want to abort and remove it?",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No,
+                self,
             )
-            if reply == QMessageBox.No:
+            if not box.exec():
                 return
 
         download_manager.remove_task(task_id)
